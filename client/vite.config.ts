@@ -3,8 +3,9 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, __dirname, '')
-  const basePath = env.VITE_BASE_PATH || '/'
+  const env = loadEnv(mode, __dirname, 'VITE_')
+  const rawBasePath = env.VITE_BASE_PATH || '/'
+  const basePath = rawBasePath.startsWith('/') ? rawBasePath : `/${rawBasePath}`
   const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`
 
   return {
