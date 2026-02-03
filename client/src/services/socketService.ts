@@ -12,7 +12,9 @@ import {
   INightResult
 } from '@/types';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+// Use current domain in production, localhost in development
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
+  (window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin);
 
 class SocketService {
   private socket: Socket | null = null;
