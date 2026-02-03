@@ -10,6 +10,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
+import path from 'path';
 
 import config from './config';
 import logger from './utils/logger';
@@ -69,6 +70,17 @@ if (config.env === 'development') {
 
 // API Routes
 app.use('/api', routes);
+
+// Serve static files from client build (production only)
+if (config.env === 'production') {
+  const publicPath = path.join(__dirname, '../public');
+  app.use(express.static(publicPath));
+  
+  // Handle client-side routing - send all non-API requests to index.html
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
+  });
+}
 
 // Setup Socket.IO handlers
 setupSocketHandlers(io);

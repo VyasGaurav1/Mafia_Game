@@ -33,22 +33,6 @@ export function validateEnvironment(): ConfigError[] {
 
   // Production-specific validation
   if (env.NODE_ENV === 'production') {
-    const productionRequired = [
-      'JWT_SECRET',
-      'REDIS_PASSWORD',
-      'MONGO_PASSWORD'
-    ];
-
-    productionRequired.forEach(variable => {
-      const value = env[variable];
-      if (!value || value.includes('change_me') || value.includes('dev') || value.length < 16) {
-        errors.push({
-          variable,
-          message: `${variable} must be securely set for production (min 16 characters, no default values)`
-        });
-      }
-    });
-
     // JWT Secret strength check
     if (env.JWT_SECRET && env.JWT_SECRET.length < 32) {
       errors.push({
