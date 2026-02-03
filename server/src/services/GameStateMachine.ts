@@ -101,7 +101,7 @@ export class GameStateMachine extends EventEmitter {
       phaseStartTime: new Date(),
       roleAssignments,
       teamAssignments,
-      alivePlayers: room.players.map(p => p.oderId),
+      alivePlayers: room.players.map((p: any) => p.oderId),
       deadPlayers: [],
       nightActions: {
         mafiaVotes: new Map()
