@@ -1,0 +1,95 @@
+{
+  "version": "5",
+  "remote": {
+    "https://edge.netlify.com/": "fd941d61d88673d5f28aab283fb86fcc50f08a3bc80ee5470498fcfa88c65cfb",
+    "https://edge.netlify.com/bootstrap/config.ts": "6a2ce0e544e15e8f8883a5c18da5948e37fd0f2619f68cb31f3af53c51817025",
+    "https://edge.netlify.com/bootstrap/context.ts": "e97240232121e2f369f6546ce961490f34d961ea1ea54be3ff09633e3f08373f",
+    "https://edge.netlify.com/bootstrap/cookie.ts": "8b0baae708989ca183c6f3b4ab3d029e6abcbc2e43f93edeb0ff447b3bbc3a05",
+    "https://edge.netlify.com/bootstrap/edge_function.ts": "b8253e86aa83c67341f5cfedeba5049d77fbf84dcab7eceff7566b7728ae9b39",
+    "https://edge.netlify.com/bootstrap/globals/types.ts": "eaa6148ded3121d8dee62dd91c86e7fe76601df0f3ca8d7962243a30f4c8935f"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:concurrently@^8.2.2"
+      ]
+    },
+    "members": {
+      "client": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@reduxjs/toolkit@^2.0.1",
+            "npm:@testing-library/jest-dom@^6.1.5",
+            "npm:@testing-library/react@^14.1.2",
+            "npm:@testing-library/user-event@^14.5.1",
+            "npm:@types/react-dom@^18.2.18",
+            "npm:@types/react@^18.2.45",
+            "npm:@types/uuid@^9.0.8",
+            "npm:@typescript-eslint/eslint-plugin@^6.15.0",
+            "npm:@typescript-eslint/parser@^6.15.0",
+            "npm:@vitejs/plugin-react@^4.2.1",
+            "npm:@vitest/ui@^1.1.0",
+            "npm:autoprefixer@^10.4.16",
+            "npm:eslint-plugin-react-hooks@^4.6.0",
+            "npm:eslint-plugin-react-refresh@~0.4.5",
+            "npm:eslint@^8.56.0",
+            "npm:framer-motion@^10.16.16",
+            "npm:jsdom@^23.0.1",
+            "npm:postcss@^8.4.32",
+            "npm:react-dom@^18.2.0",
+            "npm:react-hot-toast@^2.4.1",
+            "npm:react-icons@^4.12.0",
+            "npm:react-redux@^9.0.4",
+            "npm:react-router-dom@^6.21.1",
+            "npm:react@^18.2.0",
+            "npm:socket.io-client@^4.7.2",
+            "npm:tailwindcss@^3.4.0",
+            "npm:typescript@^5.3.3",
+            "npm:uuid@^9.0.1",
+            "npm:vite@^5.0.10",
+            "npm:vitest@^1.1.0",
+            "npm:zustand@^4.4.7"
+          ]
+        }
+      },
+      "server": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@types/bcryptjs@^2.4.6",
+            "npm:@types/cors@^2.8.17",
+            "npm:@types/express@^4.17.21",
+            "npm:@types/jest@^29.5.10",
+            "npm:@types/jsonwebtoken@^9.0.5",
+            "npm:@types/morgan@^1.9.9",
+            "npm:@types/node@^20.10.5",
+            "npm:@types/supertest@^6.0.2",
+            "npm:@types/uuid@^9.0.7",
+            "npm:@typescript-eslint/eslint-plugin@^6.15.0",
+            "npm:@typescript-eslint/parser@^6.15.0",
+            "npm:bcryptjs@^2.4.3",
+            "npm:cors@^2.8.5",
+            "npm:dotenv@^16.3.1",
+            "npm:eslint@^8.56.0",
+            "npm:express-rate-limit@^7.1.5",
+            "npm:express@^4.18.2",
+            "npm:helmet@^7.1.0",
+            "npm:ioredis@^5.3.2",
+            "npm:jest@^29.7.0",
+            "npm:jsonwebtoken@^9.0.2",
+            "npm:mongoose@^8.0.3",
+            "npm:morgan@^1.10.0",
+            "npm:socket.io@^4.7.2",
+            "npm:supertest@^6.3.3",
+            "npm:ts-jest@^29.1.1",
+            "npm:ts-node-dev@2",
+            "npm:typescript@^5.3.3",
+            "npm:uuid@^9.0.1",
+            "npm:winston@^3.11.0",
+            "npm:xstate@^5.4.1",
+            "npm:zod@^3.22.4"
+          ]
+        }
+      }
+    }
+  }
+}
