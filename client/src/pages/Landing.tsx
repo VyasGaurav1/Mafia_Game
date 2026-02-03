@@ -150,7 +150,10 @@ export default function Landing() {
     <div className="min-h-screen bg-dark-900 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-radial from-blood-500/5 via-transparent to-transparent" />
-      <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5" />
+      <div
+        className="absolute inset-0 opacity-5"
+        style={{ backgroundImage: `url('${import.meta.env.BASE_URL}noise.png')` }}
+      />
       
       {/* Animated background elements */}
       <div className="absolute top-20 left-10 w-64 h-64 bg-blood-500/10 rounded-full blur-3xl animate-pulse-slow" />

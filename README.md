@@ -177,6 +177,30 @@ Mafia/
 docker-compose up -d
 ```
 
+### GitHub Pages (Frontend Only)
+GitHub Pages can host the static React client, but you still need a separate backend for Socket.IO and API routes.
+
+1. **Configure client environment variables (build-time):**
+   ```bash
+   # client/.env
+   VITE_BASE_PATH=/Mafia_Game/
+   VITE_ROUTER_MODE=hash
+   VITE_SOCKET_URL=https://your-backend.example.com
+   VITE_API_URL=https://your-backend.example.com/api
+   ```
+   - For user/organization Pages (not project pages), set `VITE_BASE_PATH=/`.
+   - `VITE_ROUTER_MODE=hash` avoids 404s on refresh.
+
+2. **Build the client:**
+   ```bash
+   cd client
+   npm install
+   npm run build
+   ```
+
+3. **Deploy `client/dist` to GitHub Pages:**
+   - Commit the `client/dist` contents to a `gh-pages` branch or configure GitHub Actions to deploy that folder.
+
 ### Manual Deployment
 1. Build client: `cd client && npm run build`
 2. Build server: `cd server && npm run build`
