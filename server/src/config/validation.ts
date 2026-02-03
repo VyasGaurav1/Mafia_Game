@@ -18,7 +18,6 @@ export function validateEnvironment(): ConfigError[] {
   const required = [
     'NODE_ENV',
     'PORT',
-    'MONGODB_URI',
     'JWT_SECRET'
   ];
 

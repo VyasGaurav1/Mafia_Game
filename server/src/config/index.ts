@@ -52,7 +52,7 @@ const config: Config = {
   
   redis: {
     url: process.env.REDIS_URL || 'redis://localhost:6379',
-    enabled: !!process.env.REDIS_URL
+    enabled: true // Always enabled now for session storage
   },
   
   jwt: {

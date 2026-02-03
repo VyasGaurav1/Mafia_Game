@@ -9,7 +9,6 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import mongoose from 'mongoose';
 import path from 'path';
 
 import config from './config';
@@ -91,17 +90,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Database connection
-async function connectDatabase(): Promise<void> {
-  try {
-    await mongoose.connect(config.mongodb.uri, config.mongodb.options);
-    logger.info('Connected to MongoDB');
-  } catch (error) {
-    logger.error('MongoDB connection error:', error);
-    process.exit(1);
-  }
-}
-
 // Graceful shutdown
 function setupGracefulShutdown(): void {
   const shutdown = async (signal: string) => {
@@ -119,14 +107,6 @@ function setupGracefulShutdown(): void {
 
     // Cleanup room manager
     roomManager.destroy();
-
-    // Close database connection
-    try {
-      await mongoose.connection.close();
-      logger.info('MongoDB connection closed');
-    } catch (error) {
-      logger.error('Error closing MongoDB connection:', error);
-    }
 
     process.exit(0);
   };
@@ -146,8 +126,6 @@ function setupGracefulShutdown(): void {
 
 // Start server
 async function startServer(): Promise<void> {
-  await connectDatabase();
-  
   setupGracefulShutdown();
 
   httpServer.listen(config.port, () => {
@@ -158,7 +136,7 @@ async function startServer(): Promise<void> {
     ║                                                       ║
     ║   Environment: ${config.env.padEnd(38)}║
     ║   Port: ${config.port.toString().padEnd(45)}║
-    ║   MongoDB: ${config.mongodb.uri.slice(0, 40).padEnd(42)}║
+    ║   Storage: In-Memory + Redis                          ║
     ║                                                       ║
     ╚═══════════════════════════════════════════════════════╝
     `);
