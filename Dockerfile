@@ -6,7 +6,7 @@ FROM node:18-alpine AS client-builder
 
 WORKDIR /client
 COPY client/package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install && npm cache clean --force
 COPY client/ .
 RUN npm run build
 
@@ -15,7 +15,7 @@ FROM node:18-alpine AS server-builder
 
 WORKDIR /server
 COPY server/package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install && npm cache clean --force
 COPY server/ .
 RUN npm run build
 
