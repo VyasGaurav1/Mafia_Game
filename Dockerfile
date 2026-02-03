@@ -111,29 +111,7 @@ RUN echo 'server { \n\
 }' > /etc/nginx/http.d/default.conf
 
 # Create startup script
-RUN echo '#!/bin/sh \n\
-set -e \n\
-\n\
-echo "Starting Node.js server..." \n\
-node /app/dist/index.js & \n\
-SERVER_PID=$! \n\
-\n\
-echo "Waiting for server to be ready..." \n\
-sleep 5 \n\
-\n\
-echo "Starting Nginx..." \n\
-nginx -g "daemon off;" & \n\
-NGINX_PID=$! \n\
-\n\
-echo "Application started successfully" \n\
-echo "Server PID: $SERVER_PID" \n\
-echo "Nginx PID: $NGINX_PID" \n\
-\n\
-# Wait for any process to exit \n\
-wait -n \n\
-\n\
-# Exit with status of process that exited first \n\
-exit $?' > /start.sh && chmod +x /start.sh
+RUN printf '#!/bin/sh\nset -e\n\necho "Starting Node.js server..."\nnode /app/dist/index.js &\nSERVER_PID=$!\n\necho "Waiting for server to be ready..."\nsleep 5\n\necho "Starting Nginx..."\nnginx -g "daemon off;" &\nNGINX_PID=$!\n\necho "Application started successfully"\necho "Server PID: $SERVER_PID"\necho "Nginx PID: $NGINX_PID"\n\n# Wait for any process to exit\nwait -n\n\n# Exit with status of process that exited first\nexit $?' > /start.sh && chmod +x /start.sh
 
 # Expose port (Render will map this to their public port)
 EXPOSE 80
