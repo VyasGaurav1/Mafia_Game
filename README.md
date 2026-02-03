@@ -177,6 +177,14 @@ Mafia/
 docker-compose up -d
 ```
 
+### GitHub Pages (Client)
+1. **Set GitHub Pages source** to GitHub Actions in repository settings.
+2. **Configure client env vars** as repository vars or secrets:
+   - `VITE_SOCKET_URL` (WebSocket server URL)
+   - `VITE_API_URL` (API base URL, e.g. `https://api.example.com/api`)
+3. **Push to `main`** to trigger the `Deploy client to GitHub Pages` workflow.
+4. **Host the backend separately** (Node + Socket.IO server); GitHub Pages only serves the static client.
+
 ### Manual Deployment
 1. Build client: `cd client && npm run build`
 2. Build server: `cd server && npm run build`
