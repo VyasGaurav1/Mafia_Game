@@ -80,8 +80,8 @@ export class RoomManager {
         joinedAt: new Date()
       }],
       settings: { ...DEFAULT_ROOM_SETTINGS, ...settings },
-      maxPlayers: settings?.maxPlayers || DEFAULT_ROOM_SETTINGS.maxPlayers,
-      minPlayers: settings?.minPlayers || DEFAULT_ROOM_SETTINGS.minPlayers,
+      maxPlayers: 12,
+      minPlayers: 4,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date()

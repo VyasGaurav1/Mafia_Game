@@ -78,7 +78,7 @@ export class GameStateMachine extends EventEmitter {
   /**
    * Initialize a new game
    */
-  async initializeGame(room: IRoomDocument): Promise<IGameStateDocument> {
+  async initializeGame(room: any): Promise<IGameStateDocument> {
     this.room = room;
     this.timers = room.settings.timers;
 
