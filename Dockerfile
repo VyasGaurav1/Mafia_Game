@@ -8,6 +8,8 @@ WORKDIR /client
 COPY client/package*.json ./
 RUN npm install && npm cache clean --force
 COPY client/ .
+# Remove test files before building
+RUN rm -rf src/__tests__ src/**/*.test.* src/**/*.spec.*
 RUN npm run build
 
 # Stage 2: Build Server
@@ -17,6 +19,8 @@ WORKDIR /server
 COPY server/package*.json ./
 RUN npm install && npm cache clean --force
 COPY server/ .
+# Remove test files before building
+RUN rm -rf src/__tests__ src/**/*.test.* src/**/*.spec.*
 RUN npm run build
 
 # Stage 3: Production Image
