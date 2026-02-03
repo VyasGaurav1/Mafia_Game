@@ -3,7 +3,7 @@
  * Sets up routing and global providers
  */
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useGameStore } from '@/store/gameStore';
 
@@ -29,8 +29,10 @@ function RoomRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const Router = import.meta.env.VITE_ROUTER_MODE === 'hash' ? HashRouter : BrowserRouter;
+
   return (
-    <BrowserRouter>
+    <Router>
       {/* Global toast notifications */}
       <Toaster
         position="top-center"
@@ -83,7 +85,7 @@ function App() {
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 
