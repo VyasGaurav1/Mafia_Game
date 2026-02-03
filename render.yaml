@@ -1,0 +1,35 @@
+services:
+  # Main Web Service (Client + Server in one container)
+  - type: web
+    name: mafia-game
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    branch: master
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+
+databases:
+  # MongoDB Database
+  - name: mafia-mongodb
+    databaseName: mafia
+    plan: free
+    region: oregon
+
+  # Redis Cache
+  - name: mafia-redis
+    plan: free
+    region: oregon
