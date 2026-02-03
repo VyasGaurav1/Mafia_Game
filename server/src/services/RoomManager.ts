@@ -1,10 +1,9 @@
 /**
  * Room Manager Service
- * Manages active game rooms and their lifecycle
+ * Manages active game rooms and their lifecycle (In-Memory Storage)
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { Room, IRoomDocument } from '../models/Room';
 import { GameStateMachine } from './GameStateMachine';
 import { 
   RoomVisibility, 
@@ -17,8 +16,22 @@ import {
 } from '../types';
 import logger, { gameLogger } from '../utils/logger';
 
+// In-memory room interface
+interface IRoom {
+  _id: string;
+  code: string;
+  name: string;
+  visibility: RoomVisibility;
+  hostId: string;
+  players: any[];
+  settings: IRoomSettings;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface ActiveRoom {
-  room: IRoomDocument;
+  room: IRoom;
   gameEngine: GameStateMachine | null;
   lastActivity: Date;
 }
@@ -43,11 +56,12 @@ export class RoomManager {
     name: string,
     visibility: RoomVisibility,
     settings?: Partial<IRoomSettings>
-  ): Promise<IRoomDocument> {
+  ): Promise<IRoom> {
     // Generate unique room code
     const code = await this.generateRoomCode();
     
-    const room = new Room({
+    const room: IRoom = {
+      _id: uuidv4(),
       code,
       name: name || `${hostUsername}'s Room`,
       visibility,
@@ -63,10 +77,10 @@ export class RoomManager {
         joinedAt: new Date()
       }],
       settings: { ...DEFAULT_ROOM_SETTINGS, ...settings },
-      isActive: true
-    });
-
-    await room.save();
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
 
     // Track active room
     this.activeRooms.set(room.code, {
@@ -90,14 +104,11 @@ export class RoomManager {
     oderId: string,
     username: string,
     socketId: string
-  ): Promise<{ room: IRoomDocument; isReconnect: boolean }> {
+  ): Promise<{ room: IRoom; isReconnect: boolean }> {
     const activeRoom = this.activeRooms.get(roomCode);
     
     if (!activeRoom) {
-      // Try to load from database
-      const dbRoom = await Room.findOne({ code: roomCode, isActive: true });
-      if (!dbRoom) {
-        throw new Error('Room not found');
+      throw new Error('Room not found');
       }
       
       this.activeRooms.set(roomCode, {
@@ -118,7 +129,7 @@ export class RoomManager {
       // Reconnection
       existingPlayer.socketId = socketId;
       existingPlayer.isConnected = true;
-      await room.save();
+      // In-memory: no save needed
       
       activeRoom.lastActivity = new Date();
       
@@ -148,7 +159,7 @@ export class RoomManager {
       joinedAt: new Date()
     });
 
-    await room.save();
+    // In-memory: no save needed
 
     this.playerRoomMap.set(oderId, roomCode);
     activeRoom.lastActivity = new Date();
@@ -176,7 +187,7 @@ export class RoomManager {
     // If game is in progress, mark as disconnected instead of removing
     if (room.gameId) {
       player.isConnected = false;
-      await room.save();
+      // In-memory: no save needed
     } else {
       // Remove player if game hasn't started
       room.players.splice(playerIndex, 1);
@@ -193,7 +204,7 @@ export class RoomManager {
         this.activeRooms.delete(roomCode);
       }
 
-      await room.save();
+      // In-memory: no save needed
     }
 
     this.playerRoomMap.delete(oderId);
@@ -230,7 +241,7 @@ export class RoomManager {
     }
 
     room.players.splice(playerIndex, 1);
-    await room.save();
+    // In-memory: no save needed
 
     this.playerRoomMap.delete(targetId);
   }
@@ -268,7 +279,7 @@ export class RoomManager {
       }
     };
 
-    await room.save();
+    // In-memory: no save needed
     return room;
   }
 
@@ -402,7 +413,7 @@ export class RoomManager {
       for (let i = 0; i < 6; i++) {
         code += characters.charAt(Math.floor(Math.random() * characters.length));
       }
-      exists = this.activeRooms.has(code) || !!(await Room.exists({ code }));
+      exists = this.activeRooms.has(code) ;
     }
 
     return code!;
@@ -421,7 +432,7 @@ export class RoomManager {
       if (timeSinceActivity > timeout && !activeRoom.room.gameId) {
         // Deactivate room
         activeRoom.room.isActive = false;
-        await activeRoom.room.save();
+        // In-memory: no save needed
         
         // Cleanup game engine if exists
         activeRoom.gameEngine?.destroy();
@@ -449,7 +460,7 @@ export class RoomManager {
       
       if (player) {
         player.isConnected = false;
-        await activeRoom.room.save();
+        // In-memory: no save needed
         
         return { roomCode: code, oderId: player.oderId };
       }
