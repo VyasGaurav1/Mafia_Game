@@ -1,0 +1,223 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+:root {
+  --color-blood: #dc2626;
+  --color-amber: #f59e0b;
+  --color-dark: #0a0a0f;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #0a0a0f;
+  color: #ffffff;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a25;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #32323f;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #44445a;
+}
+
+/* Custom components */
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-blood-500 hover:bg-blood-600 text-white font-semibold rounded-lg 
+           transition-all duration-200 transform hover:scale-105 
+           shadow-lg hover:shadow-glow-red active:scale-95
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-dark-600 hover:bg-dark-500 text-white font-semibold rounded-lg 
+           border border-dark-400 transition-all duration-200 
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 text-gray-300 hover:text-white hover:bg-dark-600 
+           rounded-lg transition-all duration-200;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-700 border border-dark-500 rounded-lg
+           text-white placeholder-gray-500 
+           focus:outline-none focus:border-blood-500 focus:ring-1 focus:ring-blood-500
+           transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-dark-700/80 backdrop-blur-sm border border-dark-500 rounded-xl p-6
+           shadow-xl;
+  }
+
+  .card-hover {
+    @apply card hover:border-blood-500/50 hover:shadow-glow-red
+           transition-all duration-300 cursor-pointer;
+  }
+
+  .glass {
+    @apply bg-dark-800/60 backdrop-blur-md border border-white/10;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-blood-400 to-amber-400 bg-clip-text text-transparent;
+  }
+
+  .timer-bar {
+    @apply h-1 bg-gradient-to-r from-blood-500 to-amber-500 rounded-full
+           transition-all duration-1000 ease-linear;
+  }
+
+  .player-card {
+    @apply relative bg-dark-700 border-2 border-dark-500 rounded-xl p-4
+           transition-all duration-300 hover:border-dark-400;
+  }
+
+  .player-card-dead {
+    @apply player-card opacity-60 grayscale border-dark-600;
+  }
+
+  .player-card-selected {
+    @apply player-card border-blood-500 shadow-glow-red;
+  }
+
+  .player-card-self {
+    @apply player-card border-amber-500/50;
+  }
+
+  .role-badge {
+    @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+  }
+
+  .phase-indicator {
+    @apply flex items-center gap-2 px-4 py-2 rounded-full 
+           text-sm font-semibold uppercase tracking-wide;
+  }
+
+  .chat-message {
+    @apply px-4 py-2 rounded-lg max-w-[80%] break-words;
+  }
+
+  .chat-message-player {
+    @apply chat-message bg-dark-600;
+  }
+
+  .chat-message-system {
+    @apply chat-message bg-dark-700/50 text-gray-400 italic text-center max-w-full;
+  }
+
+  .chat-message-mafia {
+    @apply chat-message bg-blood-900/50 border border-blood-500/30;
+  }
+
+  .tooltip {
+    @apply absolute z-50 px-3 py-2 text-sm bg-dark-600 border border-dark-400 
+           rounded-lg shadow-xl whitespace-nowrap;
+  }
+}
+
+/* Animation utilities */
+@layer utilities {
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Night/Day theme transitions */
+.theme-night {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --accent: #dc2626;
+}
+
+.theme-day {
+  --bg-primary: #1e3a5f;
+  --bg-secondary: #2d4a6f;
+  --accent: #f59e0b;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-blood);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+}

@@ -1,0 +1,104 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: mafia-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mafia_secret_2024}
+      MONGO_INITDB_DATABASE: mafia
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - "27017:27017"
+    networks:
+      - mafia-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Redis for session storage (optional but recommended)
+  redis:
+    image: redis:7-alpine
+    container_name: mafia-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-mafia_redis_2024}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - mafia-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-mafia_redis_2024}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Backend Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: mafia-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-mafia_secret_2024}@mongodb:27017/mafia?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-mafia_redis_2024}@redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your_super_secret_jwt_key_change_this}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+    ports:
+      - "3001:3001"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - mafia-network
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Frontend Client
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-}
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: mafia-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - mafia-network
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  mafia-network:
+    driver: bridge

@@ -1,0 +1,36 @@
+{
+  "name": "mafia-game",
+  "version": "1.0.0",
+  "description": "Production-ready Mafia multiplayer web game",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "lint": "npm run lint:server && npm run lint:client",
+    "lint:server": "cd server && npm run lint",
+    "lint:client": "cd client && npm run lint",
+    "test": "npm run test:server && npm run test:client",
+    "test:server": "cd server && npm run test",
+    "test:client": "cd client && npm run test",
+    "test:coverage": "npm run test:server -- --coverage && npm run test:client -- --coverage",
+    "docker:dev": "docker-compose -f docker-compose.yml up --build",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up --build -d",
+    "docker:logs": "docker-compose logs -f",
+    "docker:down": "docker-compose down",
+    "typecheck": "npm run typecheck:server && npm run typecheck:client",
+    "typecheck:server": "cd server && tsc --noEmit",
+    "typecheck:client": "cd client && tsc --noEmit"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
