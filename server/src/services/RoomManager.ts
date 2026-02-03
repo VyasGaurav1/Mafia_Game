@@ -28,6 +28,9 @@ interface IRoom {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  gameId?: string;
+  maxPlayers: number;
+  minPlayers: number;
 }
 
 interface ActiveRoom {
@@ -77,6 +80,8 @@ export class RoomManager {
         joinedAt: new Date()
       }],
       settings: { ...DEFAULT_ROOM_SETTINGS, ...settings },
+      maxPlayers: settings?.maxPlayers || DEFAULT_ROOM_SETTINGS.maxPlayers,
+      minPlayers: settings?.minPlayers || DEFAULT_ROOM_SETTINGS.minPlayers,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -109,15 +114,6 @@ export class RoomManager {
     
     if (!activeRoom) {
       throw new Error('Room not found');
-      }
-      
-      this.activeRooms.set(roomCode, {
-        room: dbRoom,
-        gameEngine: null,
-        lastActivity: new Date()
-      });
-      
-      return this.joinRoom(roomCode, oderId, username, socketId);
     }
 
     const room = activeRoom.room;
@@ -253,7 +249,7 @@ export class RoomManager {
     roomCode: string, 
     hostId: string, 
     settings: Partial<IRoomSettings>
-  ): Promise<IRoomDocument> {
+  ): Promise<IRoom> {
     const activeRoom = this.activeRooms.get(roomCode);
     if (!activeRoom) throw new Error('Room not found');
 
@@ -320,7 +316,7 @@ export class RoomManager {
   /**
    * Get room by code
    */
-  getRoom(roomCode: string): IRoomDocument | null {
+  getRoom(roomCode: string): IRoom | null {
     const activeRoom = this.activeRooms.get(roomCode);
     return activeRoom?.room || null;
   }
@@ -359,7 +355,7 @@ export class RoomManager {
   /**
    * Convert room to public format
    */
-  toPublicRoom(room: IRoomDocument): IRoomPublic {
+  toPublicRoom(room: IRoom): IRoomPublic {
     return {
       id: room._id.toString(),
       code: room.code,
@@ -381,7 +377,7 @@ export class RoomManager {
   /**
    * Convert player to public format
    */
-  toPublicPlayer(player: any, room: IRoomDocument): IPlayerPublic {
+  toPublicPlayer(player: any, room: IRoom): IPlayerPublic {
     const gameEngine = this.getGameEngine(room.code);
     const gameState = gameEngine?.getState();
 
@@ -413,7 +409,7 @@ export class RoomManager {
       for (let i = 0; i < 6; i++) {
         code += characters.charAt(Math.floor(Math.random() * characters.length));
       }
-      exists = this.activeRooms.has(code) ;
+      exists = this.activeRooms.has(code);
     }
 
     return code!;
