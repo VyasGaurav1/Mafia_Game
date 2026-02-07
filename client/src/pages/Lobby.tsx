@@ -60,6 +60,16 @@ export default function Lobby() {
     }
   };
 
+  const handleCopyLink = () => {
+    if (room) {
+      const link = `${window.location.origin}/join/${room.code}`;
+      navigator.clipboard.writeText(link);
+      setCopied(true);
+      toast.success('Invite link copied!');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const handleStartGame = async () => {
     if (!room || !canStart) return;
     
@@ -356,18 +366,21 @@ export default function Lobby() {
             <div className="card bg-dark-800/50">
               <h3 className="font-semibold text-white mb-3">Invite Friends</h3>
               <p className="text-gray-400 text-sm mb-3">
-                Share this code with your friends:
+                Share this link — they'll join instantly:
               </p>
               <div className="flex gap-2">
-                <div className="flex-1 bg-dark-700 rounded-lg px-4 py-3 font-mono text-xl text-center text-amber-400 tracking-widest">
-                  {room.code}
+                <div className="flex-1 bg-dark-700 rounded-lg px-4 py-3 font-mono text-sm text-center text-amber-400 truncate select-all">
+                  {`${window.location.origin}/join/${room.code}`}
                 </div>
                 <Button
                   variant="secondary"
-                  onClick={handleCopyCode}
+                  onClick={handleCopyLink}
                   icon={copied ? <FaCheck /> : <FaCopy />}
                 />
               </div>
+              <p className="text-gray-500 text-xs mt-2 text-center">
+                Or share room code: <span className="font-mono text-amber-400 tracking-widest">{room.code}</span>
+              </p>
             </div>
           </motion.div>
         </main>

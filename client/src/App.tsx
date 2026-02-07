@@ -11,6 +11,7 @@ import { useGameStore } from '@/store/gameStore';
 import Landing from '@/pages/Landing';
 import Lobby from '@/pages/Lobby';
 import Game from '@/pages/Game';
+import JoinRoom from '@/pages/JoinRoom';
 
 // Room guard component - requires user and room to access
 function RoomRoute({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,9 @@ function App() {
       <Routes>
         {/* Landing/Home page */}
         <Route path="/" element={<Landing />} />
+        
+        {/* Join via shared link (no auth guard) */}
+        <Route path="/join/:roomCode" element={<JoinRoom />} />
         
         {/* Lobby page */}
         <Route
