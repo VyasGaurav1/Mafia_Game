@@ -10,6 +10,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
+import mongoose from 'mongoose';
 
 import config from './config';
 import logger from './utils/logger';
@@ -105,6 +106,14 @@ function setupGracefulShutdown(): void {
       logger.info('Socket.IO server closed');
     });
 
+    // Close MongoDB connection
+    try {
+      await mongoose.connection.close();
+      logger.info('MongoDB connection closed');
+    } catch (error) {
+      logger.error('Error closing MongoDB:', error);
+    }
+
     // Cleanup room manager
     roomManager.destroy();
 
@@ -126,21 +135,45 @@ function setupGracefulShutdown(): void {
 
 // Start server
 async function startServer(): Promise<void> {
-  setupGracefulShutdown();
+  try {
+    // Connect to MongoDB
+    logger.info('Connecting to MongoDB...');
+    await mongoose.connect(config.mongodb.uri, config.mongodb.options);
+    logger.info('MongoDB connected successfully');
 
-  httpServer.listen(config.port, () => {
-    logger.info(`
+    // Setup MongoDB event handlers
+    mongoose.connection.on('error', (error) => {
+      logger.error('MongoDB connection error:', error);
+    });
+
+    mongoose.connection.on('disconnected', () => {
+      logger.warn('MongoDB disconnected');
+    });
+
+    mongoose.connection.on('reconnected', () => {
+      logger.info('MongoDB reconnected');
+    });
+
+    setupGracefulShutdown();
+
+    httpServer.listen(config.port, () => {
+      logger.info(`
     ╔═══════════════════════════════════════════════════════╗
     ║                                                       ║
     ║   🎭 Mafia Game Server                                ║
     ║                                                       ║
     ║   Environment: ${config.env.padEnd(38)}║
     ║   Port: ${config.port.toString().padEnd(45)}║
-    ║   Storage: In-Memory + Redis                          ║
+    ║   MongoDB: Connected                                  ║
+    ║   Storage: In-Memory + MongoDB                        ║
     ║                                                       ║
     ╚═══════════════════════════════════════════════════════╝
     `);
-  });
+    });
+  } catch (error) {
+    logger.error('Failed to connect to MongoDB:', error);
+    throw error;
+  }
 }
 
 startServer().catch((error) => {

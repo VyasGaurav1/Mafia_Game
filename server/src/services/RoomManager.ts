@@ -17,7 +17,7 @@ import {
 import logger, { gameLogger } from '../utils/logger';
 
 // In-memory room interface
-interface IRoom {
+export interface IRoom {
   _id: string;
   code: string;
   name: string;

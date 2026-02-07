@@ -17,10 +17,10 @@ import {
   ROLE_CONFIGS
 } from '../types';
 import { GameState, IGameStateDocument } from '../models/GameState';
-import { Room, IRoomDocument } from '../models/Room';
 import { ActionLog } from '../models/ActionLog';
 import logger, { gameLogger } from '../utils/logger';
 import { RoleDistributionService, RoleConfig } from './RoleDistribution';
+import { IRoom } from './RoomManager';
 
 // Phase transition map - defines valid state transitions
 const PHASE_TRANSITIONS: Record<GamePhase, GamePhase[]> = {
@@ -62,7 +62,7 @@ export interface GameEvents {
 
 export class GameStateMachine extends EventEmitter {
   private gameState: IGameStateDocument | null = null;
-  private room: IRoomDocument | null = null;
+  private room: IRoom | null = null;
   private timers: ITimerSettings;
   private phaseTimer: NodeJS.Timeout | null = null;
   private roleTimer: NodeJS.Timeout | null = null;
@@ -78,7 +78,7 @@ export class GameStateMachine extends EventEmitter {
   /**
    * Initialize a new game
    */
-  async initializeGame(room: any): Promise<IGameStateDocument> {
+  async initializeGame(room: IRoom): Promise<IGameStateDocument> {
     this.room = room;
     this.timers = room.settings.timers;
 
@@ -116,9 +116,8 @@ export class GameStateMachine extends EventEmitter {
     await gameState.save();
     this.gameState = gameState;
 
-    // Update room with game reference
-    room.gameId = gameState._id;
-    await room.save();
+    // Update room with game reference (in-memory only)
+    room.gameId = gameState._id.toString();
 
     gameLogger.gameStarted(room.code, room.players.length);
 
@@ -128,7 +127,7 @@ export class GameStateMachine extends EventEmitter {
   /**
    * Assign roles based on player count and settings using RoleDistributionService
    */
-  private assignRoles(room: IRoomDocument): Map<string, string> {
+  private assignRoles(room: IRoom): Map<string, string> {
     const playerCount = room.players.length;
     const settings = room.settings;
     const roleAssignments = new Map<string, string>();
@@ -836,7 +835,6 @@ export class GameStateMachine extends EventEmitter {
     const role = this.gameState.roleAssignments.get(playerId) as Role;
 
     await this.gameState.save();
-    await this.room.save();
 
     gameLogger.playerEliminated(this.room.code, playerId, role, reason);
 
@@ -902,9 +900,8 @@ export class GameStateMachine extends EventEmitter {
     this.gameState.endedAt = new Date();
     await this.gameState.save();
 
-    // Update room
+    // Update room (in-memory only)
     this.room.isActive = false;
-    await this.room.save();
 
     gameLogger.gameEnded(
       this.room.code, 
@@ -1122,7 +1119,7 @@ export class GameStateMachine extends EventEmitter {
   /**
    * Get current room
    */
-  getRoom(): IRoomDocument | null {
+  getRoom(): IRoom | null {
     return this.room;
   }
 
