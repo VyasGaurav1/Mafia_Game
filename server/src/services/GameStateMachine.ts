@@ -354,8 +354,9 @@ export class GameStateMachine extends EventEmitter {
         // Check win conditions after night actions resolve
         const winnerAfterNight = this.checkWinConditions();
         if (winnerAfterNight) {
-          this.gameState.currentTimer = this.timers.dayDiscussion;
-          this.startPhaseTimer(this.timers.dayDiscussion, () => this.transitionTo(GamePhase.GAME_OVER));
+          // Game over - use short resolution timer to show night result then end
+          this.gameState.currentTimer = this.timers.resolution;
+          this.startPhaseTimer(this.timers.resolution, () => this.transitionTo(GamePhase.GAME_OVER));
           break;
         }
         
