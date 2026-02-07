@@ -27,7 +27,6 @@ export default function Landing() {
   const { user, setUser, setConnectionStatus } = useGameStore();
   
   const [showUsernameModal, setShowUsernameModal] = useState(false);
-  const [showJoinModal, setShowJoinModal] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
@@ -42,7 +41,6 @@ export default function Landing() {
   const [publicRooms, setPublicRooms] = useState<IRoom[]>([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(false);
   const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'browse' | 'join'>('browse');
 
   // Connect socket on mount if user exists
   useEffect(() => {
@@ -55,7 +53,6 @@ export default function Landing() {
   useEffect(() => {
     if (user && socketService.isConnected()) {
       fetchPublicRooms();
-      // Auto-refresh every 10 seconds
       const interval = setInterval(fetchPublicRooms, 10000);
       return () => clearInterval(interval);
     }
@@ -79,7 +76,7 @@ export default function Landing() {
       const rooms = await socketService.listPublicRooms();
       setPublicRooms(rooms);
     } catch (_err) {
-      // silently fail — list just stays empty
+      // silently fail
     } finally {
       setIsLoadingRooms(false);
     }
@@ -91,15 +88,6 @@ export default function Landing() {
       setShowUsernameModal(true);
     } else {
       setShowCreateModal(true);
-    }
-  };
-
-  const handleJoinClick = () => {
-    if (!user) {
-      setPendingAction('join');
-      setShowUsernameModal(true);
-    } else {
-      setShowJoinModal(true);
     }
   };
 
@@ -145,13 +133,14 @@ export default function Landing() {
       setUser(newUser);
       setShowUsernameModal(false);
       
-      // Continue with pending action
       if (pendingAction === 'create') {
         setShowCreateModal(true);
       } else if (pendingAction === 'join') {
-        setShowJoinModal(true);
+        // Code join
+        if (roomCode.length === 6) {
+          setTimeout(() => joinRoomByCode(roomCode), 100);
+        }
       } else if (pendingAction === 'browse-join' && pendingJoinCode) {
-        // Need to set user first, then join — slight delay for state propagation
         setTimeout(() => joinRoomByCode(pendingJoinCode!), 100);
         setPendingJoinCode(null);
       }
@@ -184,26 +173,17 @@ export default function Landing() {
     }
   };
 
-  const handleJoinRoom = async () => {
+  const handleJoinByCode = () => {
     if (!roomCode.trim() || roomCode.length !== 6) {
       toast.error('Please enter a valid 6-character room code');
       return;
     }
-
-    setIsLoading(true);
-    try {
-      const room = await socketService.joinRoom(
-        roomCode.toUpperCase().trim(),
-        user!.oderId,
-        user!.username
-      );
-      toast.success(`Joined room ${room.code}!`);
-      navigate(`/lobby/${room.code}`);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to join room');
-    } finally {
-      setIsLoading(false);
+    if (!user) {
+      setPendingAction('join');
+      setShowUsernameModal(true);
+      return;
     }
+    joinRoomByCode(roomCode);
   };
 
   return (
@@ -216,7 +196,7 @@ export default function Landing() {
 
       <div className="relative z-10 container mx-auto px-4 py-6 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="flex justify-between items-center mb-8">
+        <header className="flex justify-between items-center mb-6">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -234,7 +214,7 @@ export default function Landing() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <span className="text-gray-400">Playing as</span>
+              <span className="text-gray-400 text-sm">Playing as</span>
               <span className="font-semibold text-white">{user.username}</span>
               <button 
                 onClick={() => { setPendingAction(null); setShowUsernameModal(true); }}
@@ -244,10 +224,7 @@ export default function Landing() {
               </button>
             </motion.div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -259,235 +236,164 @@ export default function Landing() {
           )}
         </header>
 
-        {/* Hero section — compact */}
+        {/* Hero — compact */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-center mb-8"
+          className="text-center mb-6"
         >
-          <h1 className="font-display text-4xl md:text-6xl font-bold mb-3">
+          <h1 className="font-display text-4xl md:text-5xl font-bold mb-2">
             <span className="text-white">THE </span>
             <span className="text-gradient">MAFIA</span>
             <span className="text-white"> GAME</span>
           </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-400 max-w-xl mx-auto">
             A thrilling multiplayer social deduction game. Unmask the Mafia or work in the shadows.
           </p>
         </motion.div>
 
-        {/* Action buttons row */}
+        {/* Action buttons */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="flex flex-wrap justify-center gap-3 mb-8"
+          className="flex flex-wrap justify-center gap-3 mb-6"
         >
           <Button variant="primary" onClick={handlePlayClick} icon={<FaPlay />}>
             Create Game
-          </Button>
-          <Button variant="secondary" onClick={handleJoinClick} icon={<FaKey />}>
-            Join by Code
           </Button>
           <Button variant="ghost" onClick={() => setShowRulesModal(true)} icon={<FaBook />}>
             How to Play
           </Button>
         </motion.div>
 
-        {/* Main content — lobby browser */}
+        {/* Main content — Lobby browser */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex-1"
+          className="flex-1 max-w-4xl mx-auto w-full"
         >
-          <div className="card max-w-4xl mx-auto">
-            {/* Tabs */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex gap-1 bg-dark-700 rounded-lg p-1">
-                <button
-                  onClick={() => setActiveTab('browse')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    activeTab === 'browse'
-                      ? 'bg-blood-500 text-white shadow-lg'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <FaGlobe className="inline mr-2" />
-                  Open Games
-                </button>
-                <button
-                  onClick={() => setActiveTab('join')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    activeTab === 'join'
-                      ? 'bg-blood-500 text-white shadow-lg'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <FaLock className="inline mr-2" />
-                  Private Room
-                </button>
-              </div>
+          {/* Join by code — inline bar */}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="flex-1 flex items-center gap-2 bg-dark-800 border border-dark-600 rounded-xl px-4 py-2.5">
+              <FaKey className="text-gray-500 text-sm flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Enter room code to join..."
+                value={roomCode}
+                onChange={(e) => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
+                maxLength={6}
+                className="bg-transparent text-white font-mono tracking-widest text-sm w-full outline-none placeholder:text-gray-600 placeholder:tracking-normal placeholder:font-sans"
+              />
+            </div>
+            <Button
+              variant="secondary"
+              onClick={handleJoinByCode}
+              disabled={isLoading || roomCode.length !== 6}
+              isLoading={isLoading}
+            >
+              Join
+            </Button>
+          </div>
 
-              {activeTab === 'browse' && (
-                <button
-                  onClick={fetchPublicRooms}
-                  disabled={isLoadingRooms || !user}
-                  className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50"
-                >
-                  <FaSync className={isLoadingRooms ? 'animate-spin' : ''} />
-                  Refresh
-                </button>
-              )}
+          {/* Open games card */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-white font-semibold flex items-center gap-2">
+                <FaGlobe className="text-amber-400" />
+                Open Games
+              </h2>
+              <button
+                onClick={fetchPublicRooms}
+                disabled={isLoadingRooms || !user}
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+              >
+                <FaSync className={`text-xs ${isLoadingRooms ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
             </div>
 
-            {/* Tab content */}
-            <AnimatePresence mode="wait">
-              {activeTab === 'browse' ? (
-                <motion.div
-                  key="browse"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
+            {!user ? (
+              <div className="text-center py-10">
+                <FaGamepad className="text-3xl text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400 mb-3 text-sm">Set your name to browse and join open games</p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => { setPendingAction(null); setShowUsernameModal(true); }}
                 >
-                  {!user ? (
-                    /* Not logged in prompt */
-                    <div className="text-center py-12">
-                      <FaGamepad className="text-4xl text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-400 mb-4">Set your name to browse open games</p>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => { setPendingAction(null); setShowUsernameModal(true); }}
+                  Enter Name
+                </Button>
+              </div>
+            ) : publicRooms.length === 0 ? (
+              <div className="text-center py-10">
+                <FaUsers className="text-3xl text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400 mb-1 text-sm">No open games right now</p>
+                <p className="text-gray-500 text-xs mb-3">Create a public game and invite your friends!</p>
+                <Button variant="primary" size="sm" onClick={handlePlayClick} icon={<FaPlay />}>
+                  Create Game
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <AnimatePresence>
+                  {publicRooms.map((rm, idx) => {
+                    const hostPlayer = rm.players.find(p => p.isHost);
+                    const isFull = rm.players.length >= rm.maxPlayers;
+                    return (
+                      <motion.div
+                        key={rm.code}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ delay: idx * 0.04 }}
+                        className="flex items-center justify-between p-3 bg-dark-700/50 hover:bg-dark-700 rounded-xl border border-dark-600/40 hover:border-dark-500 transition-all group"
                       >
-                        Enter Name
-                      </Button>
-                    </div>
-                  ) : publicRooms.length === 0 ? (
-                    /* No rooms */
-                    <div className="text-center py-12">
-                      <FaUsers className="text-4xl text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-400 mb-2">No open games right now</p>
-                      <p className="text-gray-500 text-sm mb-4">Be the first — create a public game!</p>
-                      <Button variant="primary" size="sm" onClick={handlePlayClick} icon={<FaPlay />}>
-                        Create Game
-                      </Button>
-                    </div>
-                  ) : (
-                    /* Room list */
-                    <div className="space-y-3">
-                      {publicRooms.map((rm, idx) => {
-                        const hostPlayer = rm.players.find(p => p.isHost);
-                        return (
-                          <motion.div
-                            key={rm.code}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.05 }}
-                            className="flex items-center justify-between p-4 bg-dark-700/60 hover:bg-dark-700 rounded-xl border border-dark-600/50 hover:border-dark-500 transition-all group"
-                          >
-                            <div className="flex items-center gap-4 min-w-0">
-                              {/* Room icon */}
-                              <div className="w-12 h-12 rounded-xl bg-blood-500/10 border border-blood-500/20 flex items-center justify-center flex-shrink-0">
-                                <span className="text-2xl">🎭</span>
-                              </div>
-                              
-                              <div className="min-w-0">
-                                <h3 className="font-semibold text-white truncate group-hover:text-amber-300 transition-colors">
-                                  {rm.name}
-                                </h3>
-                                <div className="flex items-center gap-3 text-sm text-gray-400 mt-0.5">
-                                  <span className="flex items-center gap-1">
-                                    <FaCrown className="text-amber-400 text-xs" />
-                                    {hostPlayer?.username || 'Unknown'}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <FaUserFriends className="text-xs" />
-                                    {rm.players.length}/{rm.maxPlayers}
-                                  </span>
-                                  <span className="hidden sm:inline font-mono text-xs text-gray-500">
-                                    {rm.code}
-                                  </span>
-                                </div>
-                              </div>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-lg bg-blood-500/10 border border-blood-500/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xl">🎭</span>
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-medium text-white text-sm truncate group-hover:text-amber-300 transition-colors">
+                              {rm.name}
+                            </h3>
+                            <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+                              <span className="flex items-center gap-1">
+                                <FaCrown className="text-amber-400" style={{ fontSize: '0.6rem' }} />
+                                {hostPlayer?.username || 'Unknown'}
+                              </span>
+                              <span className="text-dark-500">|</span>
+                              <span className="flex items-center gap-1">
+                                <FaUserFriends style={{ fontSize: '0.6rem' }} />
+                                {rm.players.length}/{rm.maxPlayers}
+                              </span>
                             </div>
-
-                            {/* Join button */}
-                            <div className="flex-shrink-0 ml-4">
-                              {rm.isGameActive ? (
-                                <span className="text-xs text-orange-400 bg-orange-400/10 px-3 py-1.5 rounded-full">
-                                  In Progress
-                                </span>
-                              ) : rm.players.length >= rm.maxPlayers ? (
-                                <span className="text-xs text-gray-500 bg-dark-600 px-3 py-1.5 rounded-full">
-                                  Full
-                                </span>
-                              ) : (
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => handleBrowseJoin(rm.code)}
-                                  disabled={isLoading}
-                                >
-                                  Join
-                                </Button>
-                              )}
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </motion.div>
-              ) : (
-                /* Private room tab — enter code */
-                <motion.div
-                  key="private"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="max-w-sm mx-auto py-8"
-                >
-                  <div className="text-center mb-6">
-                    <FaLock className="text-3xl text-gray-500 mx-auto mb-3" />
-                    <p className="text-gray-400 text-sm">
-                      Enter the 6-character room code to join a private game
-                    </p>
-                  </div>
-                  <div className="space-y-4">
-                    <Input
-                      placeholder="ABCDEF"
-                      value={roomCode}
-                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                      maxLength={6}
-                      className="text-center text-2xl tracking-widest font-mono"
-                      autoFocus
-                    />
-                    <Button
-                      variant="primary"
-                      className="w-full"
-                      onClick={() => {
-                        if (!user) {
-                          setPendingAction('join');
-                          setShowUsernameModal(true);
-                        } else {
-                          handleJoinRoom();
-                        }
-                      }}
-                      disabled={isLoading || roomCode.length !== 6}
-                      isLoading={isLoading}
-                    >
-                      Join Room
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 ml-3">
+                          {rm.isGameActive ? (
+                            <span className="text-xs text-orange-400 bg-orange-400/10 px-2.5 py-1 rounded-full">In Game</span>
+                          ) : isFull ? (
+                            <span className="text-xs text-gray-500 bg-dark-600 px-2.5 py-1 rounded-full">Full</span>
+                          ) : (
+                            <Button variant="primary" size="sm" onClick={() => handleBrowseJoin(rm.code)} disabled={isLoading}>
+                              Join
+                            </Button>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         </motion.div>
 
-        {/* Footer */}
-        <footer className="text-center py-6 text-gray-500 text-sm mt-4">
+        <footer className="text-center py-4 text-gray-500 text-xs mt-4">
           <p>Made with ❤️ for social deduction enthusiasts</p>
         </footer>
       </div>
@@ -495,11 +401,7 @@ export default function Landing() {
       {/* Username Modal */}
       <Modal
         isOpen={showUsernameModal}
-        onClose={() => {
-          setShowUsernameModal(false);
-          setPendingAction(null);
-          setPendingJoinCode(null);
-        }}
+        onClose={() => { setShowUsernameModal(false); setPendingAction(null); setPendingJoinCode(null); }}
         title="Enter Your Name"
       >
         <div className="space-y-4">
@@ -577,36 +479,6 @@ export default function Landing() {
         </div>
       </Modal>
 
-      {/* Join Room Modal (code entry — kept for the Join by Code button) */}
-      <Modal
-        isOpen={showJoinModal}
-        onClose={() => setShowJoinModal(false)}
-        title="Join Room"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Room Code"
-            placeholder="Enter 6-character code"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === 'Enter' && handleJoinRoom()}
-            maxLength={6}
-            className="text-center text-2xl tracking-widest font-mono"
-            autoFocus
-          />
-          
-          <Button
-            variant="primary"
-            className="w-full"
-            onClick={handleJoinRoom}
-            disabled={isLoading || roomCode.length !== 6}
-            isLoading={isLoading}
-          >
-            Join Room
-          </Button>
-        </div>
-      </Modal>
-
       {/* Rules Modal */}
       <Modal
         isOpen={showRulesModal}
@@ -625,9 +497,7 @@ export default function Landing() {
 
           <section>
             <h3 className="font-semibold text-lg text-white mb-2">🌙 Night Phase</h3>
-            <p className="text-gray-400">
-              During the night, special roles perform their actions:
-            </p>
+            <p className="text-gray-400">During the night, special roles perform their actions:</p>
             <ul className="list-disc list-inside text-gray-400 mt-2 space-y-1">
               <li>Mafia votes to kill one Town member</li>
               <li>Detective investigates a player to learn their alignment</li>
@@ -637,9 +507,7 @@ export default function Landing() {
 
           <section>
             <h3 className="font-semibold text-lg text-white mb-2">☀️ Day Phase</h3>
-            <p className="text-gray-400">
-              During the day, all players discuss and vote:
-            </p>
+            <p className="text-gray-400">During the day, all players discuss and vote:</p>
             <ul className="list-disc list-inside text-gray-400 mt-2 space-y-1">
               <li>Night results are revealed</li>
               <li>Players discuss who might be Mafia</li>
@@ -658,9 +526,7 @@ export default function Landing() {
                       {ROLE_DISPLAY[role].name}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {ROLE_DISPLAY[role].description}
-                  </p>
+                  <p className="text-sm text-gray-400 mt-1">{ROLE_DISPLAY[role].description}</p>
                 </div>
               ))}
             </div>

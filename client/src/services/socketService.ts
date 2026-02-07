@@ -328,6 +328,14 @@ class SocketService {
   }
 
   /**
+   * Update room visibility (host only)
+   */
+  updateVisibility(roomId: string, visibility: 'PUBLIC' | 'PRIVATE'): void {
+    if (!this.socket) return;
+    this.socket.emit('room:updateVisibility', { roomId, visibility });
+  }
+
+  /**
    * Start the game (host only)
    */
   startGame(roomId: string): Promise<void> {

@@ -280,6 +280,31 @@ export class RoomManager {
   }
 
   /**
+   * Update room visibility (host only)
+   */
+  async updateVisibility(
+    roomCode: string,
+    hostId: string,
+    visibility: RoomVisibility
+  ): Promise<IRoom> {
+    const activeRoom = this.activeRooms.get(roomCode);
+    if (!activeRoom) throw new Error('Room not found');
+
+    const room = activeRoom.room;
+
+    if (room.hostId !== hostId) {
+      throw new Error('Only the host can change visibility');
+    }
+
+    if (room.gameId) {
+      throw new Error('Cannot change visibility during game');
+    }
+
+    room.visibility = visibility;
+    return room;
+  }
+
+  /**
    * Start the game
    */
   async startGame(roomCode: string, hostId: string): Promise<GameStateMachine> {

@@ -402,6 +402,8 @@ export default function Lobby() {
           }}
           onClose={() => setShowSettings(false)}
           playerCount={room.players.length}
+          roomCode={room.code}
+          roomVisibility={room.visibility}
         />
       </Modal>
     </div>

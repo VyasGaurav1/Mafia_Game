@@ -239,6 +239,21 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
       }
     });
 
+    /**
+     * Update room visibility (host only)
+     */
+    socket.on('room:updateVisibility', async ({ roomId, visibility }, callback) => {
+      try {
+        const room = await roomManager.updateVisibility(roomId, socket.oderId!, visibility);
+        const publicRoom = roomManager.toPublicRoom(room);
+        io.to(roomId).emit('room:updated', publicRoom);
+        callback?.({ success: true });
+      } catch (error: any) {
+        socket.emit('error', { message: error.message, code: 'VISIBILITY_UPDATE_FAILED' });
+        callback?.({ success: false, error: error.message });
+      }
+    });
+
     // ==========================================
     // GAME EVENTS
     // ==========================================

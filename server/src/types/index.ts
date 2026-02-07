@@ -368,6 +368,7 @@ export interface ClientToServerEvents {
   'room:leave': (roomId: string) => void;
   'room:kick': (data: { roomId: string; targetId: string }) => void;
   'room:updateSettings': (data: { roomId: string; settings: Partial<IRoomSettings> }) => void;
+  'room:updateVisibility': (data: { roomId: string; visibility: RoomVisibility }, callback?: (response: { success: boolean; error?: string }) => void) => void;
   
   'game:start': (roomId: string, callback: (response: { success: boolean; error?: string }) => void) => void;
   'game:ready': (roomId: string) => void;
