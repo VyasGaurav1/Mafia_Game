@@ -1,6 +1,24 @@
 /**
  * Role Distribution Service
  * Dynamic Mafia role assignment engine with automatic scaling and balancing
+ * 
+ * CANONICAL FORMULAS:
+ *   mafia     = floor(players / 4)
+ *   detective = min(3, max(1, floor(players / 12)))
+ *   doctor    = min(2, max(1, floor(players / 15)))
+ *   deputy_detective = 1 if players >= 14 else 0
+ *   bodyguard = 1 if players >= 16 else 0
+ *   nurse     = 1 if players >= 18 else 0
+ *   vigilante = 1 if players >= 14 else 0
+ *   mayor     = 1 if players >= 20 else 0
+ *   neutral   = floor(players / 20), max 2 (only if players >= 13)
+ *   villagers = players - sum(all roles)
+ * 
+ * HARD BALANCE RULES:
+ *   - Mafia must be <= 40% of players
+ *   - Town must always have at least 1 info role
+ *   - Town must have at least 1 protection role (if players >= 5)
+ *   - Neutral roles only when players >= 13
  */
 
 import { Role, Team } from '../types';
@@ -63,6 +81,20 @@ const ROLE_METADATA: Record<Role, Omit<RoleAssignment, 'role'>> = {
     isUnique: false,
     description: 'Investigates players to discover their alignment'
   },
+  [Role.DEPUTY_DETECTIVE]: {
+    team: Team.TOWN,
+    hasNightAction: true,
+    canKill: false,
+    isUnique: true,
+    description: 'Inherits Detective power if the Detective is eliminated'
+  },
+  [Role.NURSE]: {
+    team: Team.TOWN,
+    hasNightAction: true,
+    canKill: false,
+    isUnique: true,
+    description: 'Inherits Doctor power if the Doctor is eliminated'
+  },
   
   // Core Mafia Roles
   [Role.MAFIA]: {
@@ -78,6 +110,13 @@ const ROLE_METADATA: Record<Role, Omit<RoleAssignment, 'role'>> = {
     canKill: true,
     isUnique: true,
     description: 'Mafia leader, appears innocent to Detective'
+  },
+  [Role.MAFIOSO]: {
+    team: Team.MAFIA,
+    hasNightAction: true,
+    canKill: true,
+    isUnique: true,
+    description: 'Backup killer for the Mafia'
   },
   [Role.MAFIA_GOON]: {
     team: Team.MAFIA,
@@ -186,6 +225,7 @@ const ROLE_METADATA: Record<Role, Omit<RoleAssignment, 'role'>> = {
 export class RoleDistributionService {
   /**
    * Assign roles based on player count and configuration
+   * Uses canonical formulas from game specification
    */
   static assignRoles(playerCount: number, config: RoleConfig): RoleDistributionResult {
     const warnings: string[] = [];
@@ -221,195 +261,101 @@ export class RoleDistributionService {
   }
   
   /**
-   * Get role distribution based on player count
-   * Based on balanced role specification for competitive Mafia gameplay
+   * Get role distribution based on player count using CANONICAL FORMULAS
+   * 
+   * mafia     = floor(players / 4)
+   * detective = min(3, max(1, floor(players / 12)))  
+   * doctor    = min(2, max(1, floor(players / 15)))
+   * Threshold-based extras added on top
+   * villagers = players - sum(all other roles)
    */
-  private static getRoleDistribution(playerCount: number, config: RoleConfig): Record<Role, number> {
-    const distribution: Record<Role, number> = {} as any;
+  private static getRoleDistribution(playerCount: number, config: RoleConfig): Partial<Record<Role, number>> {
+    const distribution: Partial<Record<Role, number>> = {};
     
-    // CORE ROLES - Always use basic Mafia and Villager structure
-    // Distribution follows standard Mafia balance ratios
-    
+    // ============================================================
+    // SPECIAL CASES: 3 and 4 players (minimal games)
+    // ============================================================
     if (playerCount === 3) {
+      // Demo / test only: 1 Mafia, 2 Villagers, no night roles
       distribution[Role.MAFIA] = 1;
       distribution[Role.VILLAGER] = 2;
+      return distribution;
     }
-    else if (playerCount === 4) {
+    
+    if (playerCount === 4) {
+      // 1 Mafia, 1 Detective, 2 Villagers
       distribution[Role.MAFIA] = 1;
-      distribution[Role.VILLAGER] = 2;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      if (!config.enableDoctor) distribution[Role.VILLAGER] = 3;
-    }
-    else if (playerCount === 5) {
-      distribution[Role.MAFIA] = 1;
-      distribution[Role.VILLAGER] = 3;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      if (!config.enableDoctor) distribution[Role.VILLAGER] = 4;
-    }
-    else if (playerCount === 6) {
-      distribution[Role.MAFIA] = 2;
-      distribution[Role.VILLAGER] = 3;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      if (!config.enableDoctor) distribution[Role.VILLAGER] = 4;
-    }
-    else if (playerCount === 7) {
-      distribution[Role.MAFIA] = 2;
-      distribution[Role.VILLAGER] = 3;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
       distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      // Adjust villagers based on enabled roles
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0);
-      distribution[Role.VILLAGER] = 5 - powerRoles;
+      distribution[Role.VILLAGER] = playerCount - 1 - (distribution[Role.DETECTIVE] || 0);
+      return distribution;
     }
-    else if (playerCount === 8) {
-      distribution[Role.MAFIA] = 2;
-      distribution[Role.VILLAGER] = 4;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0);
-      distribution[Role.VILLAGER] = 6 - powerRoles;
-    }
-    else if (playerCount === 9) {
-      distribution[Role.MAFIA] = 3;
-      distribution[Role.VILLAGER] = 4;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0);
-      distribution[Role.VILLAGER] = 6 - powerRoles;
-    }
-    else if (playerCount === 10) {
-      distribution[Role.MAFIA] = 3;
-      distribution[Role.VILLAGER] = 4;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0);
-      distribution[Role.VILLAGER] = 7 - powerRoles;
-    }
-    else if (playerCount === 11) {
-      distribution[Role.MAFIA] = 3;
-      distribution[Role.VILLAGER] = 5;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0);
-      distribution[Role.VILLAGER] = 8 - powerRoles;
-    }
-    else if (playerCount === 12) {
-      distribution[Role.MAFIA] = 4;
-      distribution[Role.VILLAGER] = 5;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0);
-      distribution[Role.VILLAGER] = 8 - powerRoles;
-    }
-    else if (playerCount === 13) {
-      distribution[Role.MAFIA] = 4;
-      distribution[Role.VILLAGER] = 6;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0);
-      distribution[Role.VILLAGER] = 9 - powerRoles;
-    }
-    else if (playerCount === 14) {
-      distribution[Role.MAFIA] = 4;
-      distribution[Role.VILLAGER] = 6;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      distribution[Role.BODYGUARD] = config.enableAdvancedRoles ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0) + (config.enableAdvancedRoles ? 1 : 0);
-      distribution[Role.VILLAGER] = 10 - powerRoles;
-    }
-    else if (playerCount === 15) {
-      distribution[Role.MAFIA] = 5;
-      distribution[Role.VILLAGER] = 6;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      distribution[Role.BODYGUARD] = config.enableAdvancedRoles ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0) + (config.enableAdvancedRoles ? 1 : 0);
-      distribution[Role.VILLAGER] = 11 - powerRoles;
-    }
-    else if (playerCount === 16) {
-      distribution[Role.MAFIA] = 5;
-      distribution[Role.VILLAGER] = 7;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      distribution[Role.BODYGUARD] = config.enableAdvancedRoles ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0) + (config.enableAdvancedRoles ? 1 : 0);
-      distribution[Role.VILLAGER] = 12 - powerRoles;
-    }
-    else if (playerCount === 17) {
-      distribution[Role.MAFIA] = 5;
-      distribution[Role.VILLAGER] = 8;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      distribution[Role.BODYGUARD] = config.enableAdvancedRoles ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0) + (config.enableAdvancedRoles ? 1 : 0);
-      distribution[Role.VILLAGER] = 13 - powerRoles;
-    }
-    else if (playerCount === 18) {
-      distribution[Role.MAFIA] = 6;
-      distribution[Role.VILLAGER] = 8;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      distribution[Role.BODYGUARD] = config.enableAdvancedRoles ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0) + (config.enableAdvancedRoles ? 1 : 0);
-      distribution[Role.VILLAGER] = 14 - powerRoles;
-    }
-    else if (playerCount === 19) {
-      distribution[Role.MAFIA] = 6;
-      distribution[Role.VILLAGER] = 9;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      distribution[Role.BODYGUARD] = config.enableAdvancedRoles ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0) + (config.enableAdvancedRoles ? 1 : 0);
-      distribution[Role.VILLAGER] = 15 - powerRoles;
-    }
-    else if (playerCount === 20) {
-      distribution[Role.MAFIA] = 7;
-      distribution[Role.VILLAGER] = 9;
-      distribution[Role.DOCTOR] = config.enableDoctor ? 1 : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? 1 : 0;
-      distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-      distribution[Role.BODYGUARD] = config.enableAdvancedRoles ? 1 : 0;
-      const powerRoles = (config.enableDoctor ? 1 : 0) + (config.enableDetective ? 1 : 0) + (config.enableVigilante ? 1 : 0) + (config.enableAdvancedRoles ? 1 : 0);
-      distribution[Role.VILLAGER] = 16 - powerRoles;
-    }
-    // For 20+ players, use scaling formula
-    else {
-      // Mafia: ~35% for balance in larger games
-      const mafiaCount = Math.ceil(playerCount * 0.35);
-      distribution[Role.MAFIA] = mafiaCount;
+    
+    // ============================================================
+    // CORE FORMULAS (players >= 5)
+    // ============================================================
+    
+    // 🔫 Mafia Count: floor(total_players / 4)
+    const mafiaCount = Math.floor(playerCount / 4);
+    distribution[Role.MAFIA] = mafiaCount;
+    
+    // 🔍 Detective Count: min(3, max(1, floor(total_players / 12)))
+    const detectiveCount = config.enableDetective 
+      ? Math.min(3, Math.max(1, Math.floor(playerCount / 12)))
+      : 0;
+    distribution[Role.DETECTIVE] = detectiveCount;
+    
+    // 🧑‍⚕️ Doctor Count: min(2, max(1, floor(total_players / 15)))
+    const doctorCount = config.enableDoctor
+      ? Math.min(2, Math.max(1, Math.floor(playerCount / 15)))
+      : 0;
+    distribution[Role.DOCTOR] = doctorCount;
+    
+    // ============================================================
+    // THRESHOLD-BASED EXTRAS
+    // ============================================================
+    
+    // Deputy Detective: 1 if players >= 14
+    distribution[Role.DEPUTY_DETECTIVE] = (config.enableDetective && playerCount >= 14) ? 1 : 0;
+    
+    // Vigilante: 1 if players >= 14
+    distribution[Role.VIGILANTE] = (config.enableVigilante && playerCount >= 14) ? 1 : 0;
+    
+    // Bodyguard: 1 if players >= 16
+    distribution[Role.BODYGUARD] = (config.enableAdvancedRoles && playerCount >= 16) ? 1 : 0;
+    
+    // Nurse: 1 if players >= 18
+    distribution[Role.NURSE] = (config.enableAdvancedRoles && playerCount >= 18) ? 1 : 0;
+    
+    // Mayor: 1 if players >= 20
+    distribution[Role.MAYOR] = (config.enableAdvancedRoles && playerCount >= 20) ? 1 : 0;
+    
+    // ============================================================
+    // NEUTRAL ROLES (Optional, only when players >= 13, max 2)
+    // ============================================================
+    if (config.enableNeutralRoles && playerCount >= 13) {
+      const neutralCount = Math.min(2, Math.floor(playerCount / 20));
       
-      // Core power roles
-      distribution[Role.DOCTOR] = config.enableDoctor ? Math.ceil(playerCount / 15) : 0;
-      distribution[Role.DETECTIVE] = config.enableDetective ? Math.ceil(playerCount / 15) : 0;
-      
-      if (config.enableAdvancedRoles) {
-        distribution[Role.VIGILANTE] = config.enableVigilante ? 1 : 0;
-        distribution[Role.BODYGUARD] = 1;
-        distribution[Role.JAILOR] = 1;
-        distribution[Role.MAYOR] = 1;
-        distribution[Role.SPY] = config.enableChaosRoles ? 1 : 0;
+      if (neutralCount >= 1 && config.enableJester) {
+        distribution[Role.JESTER] = 1;
       }
-      
-      if (config.enableNeutralRoles && playerCount >= 25) {
-        distribution[Role.JESTER] = config.enableJester ? 1 : 0;
+      if (neutralCount >= 2) {
         distribution[Role.SERIAL_KILLER] = 1;
       }
-      
-      // Fill remaining with villagers
-      const assignedCount = Object.values(distribution).reduce((sum, count) => sum + count, 0);
-      distribution[Role.VILLAGER] = playerCount - assignedCount;
     }
+    
+    // ============================================================
+    // GODFATHER (replaces one regular Mafia if enabled and >= 2 mafia)
+    // ============================================================
+    if (config.enableGodfather && mafiaCount >= 2) {
+      distribution[Role.GODFATHER] = 1;
+      distribution[Role.MAFIA] = mafiaCount - 1;
+    }
+    
+    // ============================================================
+    // VILLAGERS = remaining players
+    // ============================================================
+    const assignedCount = Object.values(distribution).reduce((sum, count) => sum + (count || 0), 0);
+    distribution[Role.VILLAGER] = Math.max(0, playerCount - assignedCount);
     
     return distribution;
   }
@@ -417,14 +363,14 @@ export class RoleDistributionService {
   /**
    * Create role assignments from distribution
    */
-  private static createRoleAssignments(distribution: Record<Role, number>): RoleAssignment[] {
+  private static createRoleAssignments(distribution: Partial<Record<Role, number>>): RoleAssignment[] {
     const assignments: RoleAssignment[] = [];
     
     for (const [roleStr, count] of Object.entries(distribution)) {
       const role = roleStr as Role;
       const metadata = ROLE_METADATA[role];
       
-      if (!metadata) continue;
+      if (!metadata || !count) continue;
       
       for (let i = 0; i < count; i++) {
         assignments.push({
@@ -450,7 +396,7 @@ export class RoleDistributionService {
   }
   
   /**
-   * Check game balance
+   * Check game balance against HARD BALANCE RULES
    */
   private static checkBalance(
     teamCounts: { mafia: number; town: number; neutral: number },
@@ -459,26 +405,22 @@ export class RoleDistributionService {
   ): boolean {
     let isBalanced = true;
     
-    // Rule 1: Mafia should never be >= Town
+    // Rule 1: Mafia must be <= 40% of players
+    const mafiaPercent = (teamCounts.mafia / totalPlayers) * 100;
+    if (mafiaPercent > 40) {
+      warnings.push(`CRITICAL: Mafia percentage (${mafiaPercent.toFixed(1)}%) exceeds 40% cap`);
+      isBalanced = false;
+    }
+    
+    // Rule 2: Mafia should never equal or outnumber Town at start
     if (teamCounts.mafia >= teamCounts.town) {
       warnings.push('CRITICAL: Mafia count >= Town count - game is unbalanced');
       isBalanced = false;
     }
     
-    // Rule 2: Mafia should be ~20-30% of total
-    const mafiaPercent = (teamCounts.mafia / totalPlayers) * 100;
-    if (mafiaPercent < 15 || mafiaPercent > 35) {
-      warnings.push(`Mafia percentage (${mafiaPercent.toFixed(1)}%) is outside recommended range (15-35%)`);
-    }
-    
-    // Rule 3: Too many neutrals can cause chaos
-    if (teamCounts.neutral > totalPlayers * 0.15) {
-      warnings.push('High neutral role count may cause game imbalance');
-    }
-    
-    // Rule 4: Minimum town members
-    if (teamCounts.town < 4) {
-      warnings.push('Town has too few members');
+    // Rule 3: Too many neutrals can cause chaos (max 2)
+    if (teamCounts.neutral > 2) {
+      warnings.push('Neutral count exceeds maximum of 2');
       isBalanced = false;
     }
     
@@ -513,15 +455,13 @@ export class RoleDistributionService {
   static validateConfiguration(playerCount: number, config: RoleConfig): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     
-    if (playerCount < 6) {
-      errors.push('Minimum 6 players required');
+    if (playerCount < 3) {
+      errors.push('Minimum 3 players required');
     }
     
     if (playerCount > 50) {
       errors.push('Maximum 50 players recommended');
     }
-    
-    // Add more validation rules as needed
     
     return {
       valid: errors.length === 0,

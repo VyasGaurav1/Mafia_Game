@@ -135,10 +135,10 @@ export class GameStateMachine extends EventEmitter {
     
     // Build role config from room settings
     const roleConfig: RoleConfig = {
-      enableAdvancedRoles: false, // Keep it simple for now
-      enableNeutralRoles: settings.enableJester,
+      enableAdvancedRoles: settings.enableAdvancedRoles ?? false,
+      enableNeutralRoles: settings.enableNeutralRoles ?? settings.enableJester ?? false,
       enableChaosRoles: false,
-      enableGodfather: settings.enableDonMafia,
+      enableGodfather: settings.enableGodfather ?? settings.enableDonMafia ?? false,
       enableJester: settings.enableJester,
       enableVigilante: settings.enableVigilante,
       enableDoctor: true, // Always enabled
@@ -391,8 +391,8 @@ export class GameStateMachine extends EventEmitter {
     
     const aliveRoles = this.getAliveRoles();
 
-    // Doctor acts immediately after Mafia - Doctor doesn't know who was targeted
-    if (aliveRoles.has(Role.DOCTOR)) {
+    // Doctor/Nurse acts immediately after Mafia - Doctor doesn't know who was targeted
+    if (aliveRoles.has(Role.DOCTOR) || aliveRoles.has(Role.NURSE)) {
       this.nightPhaseOrder.push(GamePhase.DOCTOR_ACTION);
     }
 
@@ -401,8 +401,8 @@ export class GameStateMachine extends EventEmitter {
       this.nightPhaseOrder.push(GamePhase.DON_ACTION);
     }
 
-    // Detective investigates
-    if (aliveRoles.has(Role.DETECTIVE)) {
+    // Detective / Deputy Detective investigates
+    if (aliveRoles.has(Role.DETECTIVE) || aliveRoles.has(Role.DEPUTY_DETECTIVE)) {
       this.nightPhaseOrder.push(GamePhase.DETECTIVE_ACTION);
     }
 
@@ -480,10 +480,13 @@ export class GameStateMachine extends EventEmitter {
         break;
 
       case ActionType.DETECTIVE_INVESTIGATE:
-        if (playerRole === Role.DETECTIVE) {
+        if (playerRole === Role.DETECTIVE || playerRole === Role.DEPUTY_DETECTIVE) {
           this.gameState.nightActions.detectiveTarget = targetId;
           const targetRole = this.gameState.roleAssignments.get(targetId) as Role;
-          const isGuilty = ROLE_CONFIGS[targetRole].team === Team.MAFIA;
+          // GODFATHER appears INNOCENT to Detective investigation
+          const isGuilty = targetRole === Role.GODFATHER 
+            ? false 
+            : ROLE_CONFIGS[targetRole].team === Team.MAFIA;
           this.gameState.nightActions.detectiveResult = isGuilty;
           await this.logAction(playerId, actionType, targetId, { isGuilty });
           return true;
@@ -502,8 +505,8 @@ export class GameStateMachine extends EventEmitter {
         break;
 
       case ActionType.DOCTOR_SAVE:
-        if (playerRole === Role.DOCTOR) {
-          // Check consecutive self-save rule
+        if (playerRole === Role.DOCTOR || playerRole === Role.NURSE) {
+          // Check consecutive self-save rule (Doctor can self-save only once)
           const lastSave = this.gameState.lastDoctorSave.get(playerId);
           if (targetId === playerId && lastSave === playerId) {
             return false; // Cannot self-save twice in a row
@@ -555,7 +558,8 @@ export class GameStateMachine extends EventEmitter {
     switch (actionType) {
       case ActionType.MAFIA_KILL:
         if (currentPhase !== GamePhase.MAFIA_ACTION) return false;
-        if (playerRole !== Role.MAFIA && playerRole !== Role.DON_MAFIA) return false;
+        if (playerRole !== Role.MAFIA && playerRole !== Role.DON_MAFIA && 
+            playerRole !== Role.GODFATHER && playerRole !== Role.MAFIOSO) return false;
         // Cannot target fellow mafia
         const targetTeam = this.gameState.teamAssignments.get(targetId);
         if (targetTeam === Team.MAFIA) return false;
@@ -563,7 +567,7 @@ export class GameStateMachine extends EventEmitter {
 
       case ActionType.DETECTIVE_INVESTIGATE:
         if (currentPhase !== GamePhase.DETECTIVE_ACTION) return false;
-        if (playerRole !== Role.DETECTIVE) return false;
+        if (playerRole !== Role.DETECTIVE && playerRole !== Role.DEPUTY_DETECTIVE) return false;
         // Cannot investigate self
         if (targetId === playerId) return false;
         break;
@@ -575,7 +579,7 @@ export class GameStateMachine extends EventEmitter {
 
       case ActionType.DOCTOR_SAVE:
         if (currentPhase !== GamePhase.DOCTOR_ACTION) return false;
-        if (playerRole !== Role.DOCTOR) return false;
+        if (playerRole !== Role.DOCTOR && playerRole !== Role.NURSE) return false;
         break;
 
       case ActionType.VIGILANTE_KILL:
@@ -734,15 +738,18 @@ export class GameStateMachine extends EventEmitter {
   }
 
   /**
-   * Calculate vote counts
+   * Calculate vote counts (Mayor's vote counts as 2)
    */
   private calculateVoteCounts(): Record<string, number> {
     if (!this.gameState) return {};
 
     const counts: Record<string, number> = {};
     
-    this.gameState.votes.forEach((targetId) => {
-      counts[targetId] = (counts[targetId] || 0) + 1;
+    this.gameState.votes.forEach((targetId, voterId) => {
+      // Mayor's vote counts as 2
+      const voterRole = this.gameState!.roleAssignments.get(voterId) as Role;
+      const voteWeight = voterRole === Role.MAYOR ? 2 : 1;
+      counts[targetId] = (counts[targetId] || 0) + voteWeight;
     });
 
     return counts;
@@ -973,17 +980,23 @@ export class GameStateMachine extends EventEmitter {
     switch (role) {
       case Role.MAFIA:
       case Role.DON_MAFIA:
+      case Role.GODFATHER:
+      case Role.MAFIOSO:
         // Cannot target fellow mafia
         return alivePlayers.filter(id => 
           this.gameState!.teamAssignments.get(id) !== Team.MAFIA
         );
 
       case Role.DETECTIVE:
-        // Cannot investigate self
-        const detectiveId = this.getPlayerIdByRole(Role.DETECTIVE);
-        return alivePlayers.filter(id => id !== detectiveId);
+      case Role.DEPUTY_DETECTIVE:
+        // Cannot investigate self - exclude all detective-type players
+        return alivePlayers.filter(id => {
+          const r = this.gameState!.roleAssignments.get(id) as Role;
+          return r !== Role.DETECTIVE && r !== Role.DEPUTY_DETECTIVE;
+        });
 
       case Role.DOCTOR:
+      case Role.NURSE:
         // Can target anyone (including self, with restrictions)
         return alivePlayers;
 

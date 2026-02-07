@@ -258,8 +258,13 @@ export default function Lobby() {
                 {(() => {
                   const roleCount = calculateRoleDistribution(room.players.length, {
                     enableDonMafia: room.settings.enableDonMafia ?? false,
+                    enableGodfather: room.settings.enableGodfather ?? false,
                     enableJester: room.settings.enableJester ?? false,
-                    enableVigilante: room.settings.enableVigilante ?? false
+                    enableVigilante: room.settings.enableVigilante ?? false,
+                    enableDoctor: room.settings.enableDoctor ?? true,
+                    enableDetective: room.settings.enableDetective ?? true,
+                    enableAdvancedRoles: room.settings.enableAdvancedRoles ?? false,
+                    enableNeutralRoles: room.settings.enableNeutralRoles ?? false,
                   });
                   return (
                     <>
@@ -269,6 +274,12 @@ export default function Lobby() {
                           {roleCount.mafia}
                         </span>
                       </div>
+                      {roleCount.godfather > 0 && (
+                        <div className="flex justify-between text-gray-400">
+                          <span className="ml-3">├ Godfather</span>
+                          <span className="text-red-500">{roleCount.godfather}</span>
+                        </div>
+                      )}
                       {room.settings.enableDonMafia && room.players.length >= 8 && (
                         <div className="flex justify-between text-gray-400">
                           <span className="ml-3">├ Don Mafia</span>
@@ -281,10 +292,22 @@ export default function Lobby() {
                           <span className="text-green-400">{roleCount.detective}</span>
                         </div>
                       )}
+                      {roleCount.deputyDetective > 0 && (
+                        <div className="flex justify-between text-gray-400">
+                          <span className="ml-3">├ Deputy Detective</span>
+                          <span className="text-green-400">{roleCount.deputyDetective}</span>
+                        </div>
+                      )}
                       {roleCount.doctor > 0 && (
                         <div className="flex justify-between text-gray-400">
                           <span>Doctor</span>
                           <span className="text-pink-400">{roleCount.doctor}</span>
+                        </div>
+                      )}
+                      {roleCount.nurse > 0 && (
+                        <div className="flex justify-between text-gray-400">
+                          <span className="ml-3">├ Nurse</span>
+                          <span className="text-pink-300">{roleCount.nurse}</span>
                         </div>
                       )}
                       {roleCount.vigilante > 0 && (
@@ -299,10 +322,22 @@ export default function Lobby() {
                           <span className="text-yellow-400">{roleCount.bodyguard}</span>
                         </div>
                       )}
+                      {roleCount.mayor > 0 && (
+                        <div className="flex justify-between text-gray-400">
+                          <span>Mayor</span>
+                          <span className="text-yellow-500">{roleCount.mayor}</span>
+                        </div>
+                      )}
                       {roleCount.jester > 0 && (
                         <div className="flex justify-between text-gray-400">
                           <span>Jester</span>
                           <span className="text-purple-400">{roleCount.jester}</span>
+                        </div>
+                      )}
+                      {roleCount.serialKiller > 0 && (
+                        <div className="flex justify-between text-gray-400">
+                          <span>Serial Killer</span>
+                          <span className="text-purple-500">{roleCount.serialKiller}</span>
                         </div>
                       )}
                       <div className="flex justify-between text-gray-400">

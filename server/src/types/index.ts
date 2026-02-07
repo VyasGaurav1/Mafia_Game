@@ -12,10 +12,13 @@ export enum Role {
   VILLAGER = 'VILLAGER',
   DOCTOR = 'DOCTOR',
   DETECTIVE = 'DETECTIVE',
+  DEPUTY_DETECTIVE = 'DEPUTY_DETECTIVE',
+  NURSE = 'NURSE',
   
   // Core Mafia Roles
   MAFIA = 'MAFIA',
   GODFATHER = 'GODFATHER',
+  MAFIOSO = 'MAFIOSO',
   MAFIA_GOON = 'MAFIA_GOON',
   
   // Advanced Town Roles
@@ -184,8 +187,11 @@ export interface IRoom {
 
 export interface IRoomSettings {
   enableDonMafia: boolean;
+  enableGodfather: boolean;
   enableJester: boolean;
   enableVigilante: boolean;
+  enableAdvancedRoles: boolean;
+  enableNeutralRoles: boolean;
   timers: ITimerSettings;
   allowSpectators: boolean;
   revealRolesOnDeath: boolean;
@@ -436,7 +442,7 @@ export const ROLE_CONFIGS: Record<Role, IRoleConfig> = {
     team: Team.TOWN,
     priority: 0,
     isRequired: true,
-    minPlayers: 6,
+    minPlayers: 3,
     description: 'A regular townsperson with no special abilities. Use your wits to identify the Mafia.'
   },
   [Role.MAFIA]: {
@@ -444,7 +450,7 @@ export const ROLE_CONFIGS: Record<Role, IRoleConfig> = {
     team: Team.MAFIA,
     priority: 1,
     isRequired: true,
-    minPlayers: 6,
+    minPlayers: 3,
     description: 'Work with your fellow Mafia members to eliminate the town. Vote each night to kill.'
   },
   [Role.GODFATHER]: {
@@ -454,6 +460,14 @@ export const ROLE_CONFIGS: Record<Role, IRoleConfig> = {
     isRequired: false,
     minPlayers: 9,
     description: 'Mafia leader who appears innocent to Detective. Lead your team to victory.'
+  },
+  [Role.MAFIOSO]: {
+    role: Role.MAFIOSO,
+    team: Team.MAFIA,
+    priority: 1,
+    isRequired: false,
+    minPlayers: 9,
+    description: 'Backup killer for the Mafia. Steps up if the Godfather is eliminated.'
   },
   [Role.MAFIA_GOON]: {
     role: Role.MAFIA_GOON,
@@ -484,23 +498,39 @@ export const ROLE_CONFIGS: Record<Role, IRoleConfig> = {
     team: Team.TOWN,
     priority: 3,
     isRequired: true,
-    minPlayers: 6,
+    minPlayers: 4,
     description: 'Investigate one player per night to determine if they are Mafia.'
+  },
+  [Role.DEPUTY_DETECTIVE]: {
+    role: Role.DEPUTY_DETECTIVE,
+    team: Team.TOWN,
+    priority: 3,
+    isRequired: false,
+    minPlayers: 14,
+    description: 'Inherits Detective power if the Detective is eliminated.'
   },
   [Role.DOCTOR]: {
     role: Role.DOCTOR,
     team: Team.TOWN,
     priority: 4,
     isRequired: true,
-    minPlayers: 6,
+    minPlayers: 5,
     description: 'Save one player per night from being killed. Cannot save yourself twice in a row.'
+  },
+  [Role.NURSE]: {
+    role: Role.NURSE,
+    team: Team.TOWN,
+    priority: 4,
+    isRequired: false,
+    minPlayers: 18,
+    description: 'Inherits Doctor power if the Doctor is eliminated.'
   },
   [Role.BODYGUARD]: {
     role: Role.BODYGUARD,
     team: Team.TOWN,
     priority: 5,
     isRequired: false,
-    minPlayers: 13,
+    minPlayers: 16,
     description: 'Protect one player each night. You die if they are attacked.'
   },
   [Role.JAILOR]: {
@@ -516,7 +546,7 @@ export const ROLE_CONFIGS: Record<Role, IRoleConfig> = {
     team: Team.TOWN,
     priority: 7,
     isRequired: false,
-    minPlayers: 10,
+    minPlayers: 14,
     description: 'Kill one player during the night. Use wisely - you only get one shot.'
   },
   [Role.MAYOR]: {
@@ -524,7 +554,7 @@ export const ROLE_CONFIGS: Record<Role, IRoleConfig> = {
     team: Team.TOWN,
     priority: 8,
     isRequired: false,
-    minPlayers: 21,
+    minPlayers: 20,
     description: 'Your vote counts as 2 during town voting.'
   },
   [Role.SPY]: {
@@ -540,7 +570,7 @@ export const ROLE_CONFIGS: Record<Role, IRoleConfig> = {
     team: Team.NEUTRAL,
     priority: 0,
     isRequired: false,
-    minPlayers: 8,
+    minPlayers: 13,
     description: 'Win by getting yourself voted out during the day. Act suspicious!'
   },
   [Role.SERIAL_KILLER]: {
@@ -548,7 +578,7 @@ export const ROLE_CONFIGS: Record<Role, IRoleConfig> = {
     team: Team.NEUTRAL,
     priority: 1,
     isRequired: false,
-    minPlayers: 26,
+    minPlayers: 13,
     description: 'Kill one player each night. Win by being the last one standing.'
   },
   [Role.CULT_LEADER]: {
@@ -596,8 +626,11 @@ export const DEFAULT_TIMER_SETTINGS: ITimerSettings = {
 
 export const DEFAULT_ROOM_SETTINGS: IRoomSettings = {
   enableDonMafia: true,
+  enableGodfather: false,
   enableJester: false,
   enableVigilante: false,
+  enableAdvancedRoles: false,
+  enableNeutralRoles: false,
   timers: DEFAULT_TIMER_SETTINGS,
   allowSpectators: true,
   revealRolesOnDeath: true,

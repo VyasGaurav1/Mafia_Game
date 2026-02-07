@@ -32,6 +32,11 @@ const rolePrompts: Record<Role, { icon: React.ReactNode; title: string; descript
     title: 'Mafia Action',
     description: 'Vote with your Mafia to eliminate someone'
   },
+  [Role.MAFIOSO]: {
+    icon: <FaSkull className="text-2xl" />,
+    title: 'Mafioso Action',
+    description: 'Vote with your Mafia to eliminate someone'
+  },
   [Role.MAFIA_HEALER]: {
     icon: <FaHeartbeat className="text-2xl" />,
     title: 'Protect Your Ally',
@@ -52,10 +57,20 @@ const rolePrompts: Record<Role, { icon: React.ReactNode; title: string; descript
     title: 'Investigation',
     description: 'Select a player to investigate'
   },
+  [Role.DEPUTY_DETECTIVE]: {
+    icon: <FaSearch className="text-2xl" />,
+    title: 'Deputy Investigation',
+    description: 'You inherited the Detective\'s power. Investigate a player.'
+  },
   [Role.DOCTOR]: {
     icon: <FaHeartbeat className="text-2xl" />,
     title: 'Protection',
     description: 'Select a player to protect tonight'
+  },
+  [Role.NURSE]: {
+    icon: <FaHeartbeat className="text-2xl" />,
+    title: 'Nurse Protection',
+    description: 'You inherited the Doctor\'s power. Protect someone tonight.'
   },
   [Role.BODYGUARD]: {
     icon: <FaCrosshairs className="text-2xl" />,

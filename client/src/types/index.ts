@@ -12,10 +12,13 @@ export enum Role {
   VILLAGER = 'VILLAGER',
   DOCTOR = 'DOCTOR',
   DETECTIVE = 'DETECTIVE',
+  DEPUTY_DETECTIVE = 'DEPUTY_DETECTIVE',
+  NURSE = 'NURSE',
   
   // Core Mafia Roles
   MAFIA = 'MAFIA',
   GODFATHER = 'GODFATHER',
+  MAFIOSO = 'MAFIOSO',
   MAFIA_GOON = 'MAFIA_GOON',
   
   // Advanced Town Roles
@@ -84,6 +87,7 @@ export enum WinCondition {
   MAFIA_WINS = 'MAFIA_WINS',
   TOWN_WINS = 'TOWN_WINS',
   JESTER_WINS = 'JESTER_WINS',
+  SERIAL_KILLER_WINS = 'SERIAL_KILLER_WINS',
   DRAW = 'DRAW'
 }
 
@@ -261,6 +265,14 @@ export const ROLE_DISPLAY: Record<Role, IRoleDisplayConfig> = {
     bgColor: 'bg-blue-600/20',
     icon: '🔍'
   },
+  [Role.DEPUTY_DETECTIVE]: {
+    name: 'Deputy Detective',
+    description: 'Inherits Detective power if the Detective is eliminated.',
+    team: Team.TOWN,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/20',
+    icon: '🔎'
+  },
   
   // Core Mafia Roles
   [Role.MAFIA]: {
@@ -287,6 +299,14 @@ export const ROLE_DISPLAY: Record<Role, IRoleDisplayConfig> = {
     bgColor: 'bg-red-500/20',
     icon: '🗡️'
   },
+  [Role.MAFIOSO]: {
+    name: 'Mafioso',
+    description: 'Backup killer for the Mafia. Steps up if Godfather is eliminated.',
+    team: Team.MAFIA,
+    color: 'text-red-500',
+    bgColor: 'bg-red-600/20',
+    icon: '🔫'
+  },
   
   // Advanced Town Roles
   [Role.BODYGUARD]: {
@@ -296,6 +316,14 @@ export const ROLE_DISPLAY: Record<Role, IRoleDisplayConfig> = {
     color: 'text-cyan-400',
     bgColor: 'bg-cyan-500/20',
     icon: '🛡️'
+  },
+  [Role.NURSE]: {
+    name: 'Nurse',
+    description: 'Inherits Doctor power if the Doctor is eliminated.',
+    team: Team.TOWN,
+    color: 'text-green-300',
+    bgColor: 'bg-green-400/20',
+    icon: '💊'
   },
   [Role.JAILOR]: {
     name: 'Jailor',

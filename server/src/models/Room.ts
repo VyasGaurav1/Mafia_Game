@@ -30,8 +30,11 @@ export interface IRoomDocument extends Document {
   minPlayers: number;
   settings: {
     enableDonMafia: boolean;
+    enableGodfather: boolean;
     enableJester: boolean;
     enableVigilante: boolean;
+    enableAdvancedRoles: boolean;
+    enableNeutralRoles: boolean;
     timers: {
       roleReveal: number;
       mafiaAction: number;
@@ -100,7 +103,7 @@ const roomSchema = new Schema<IRoomDocument>({
     type: Number,
     default: 12,
     min: 3,
-    max: 20
+    max: 30
   },
   minPlayers: {
     type: Number,
@@ -109,8 +112,11 @@ const roomSchema = new Schema<IRoomDocument>({
   },
   settings: {
     enableDonMafia: { type: Boolean, default: true },
+    enableGodfather: { type: Boolean, default: false },
     enableJester: { type: Boolean, default: false },
     enableVigilante: { type: Boolean, default: false },
+    enableAdvancedRoles: { type: Boolean, default: false },
+    enableNeutralRoles: { type: Boolean, default: false },
     timers: {
       roleReveal: { type: Number, default: 10 },
       mafiaAction: { type: Number, default: 40 },

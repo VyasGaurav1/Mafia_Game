@@ -297,7 +297,8 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
         
         switch (currentPhase) {
           case GamePhase.MAFIA_ACTION:
-            if (playerRole !== Role.MAFIA && playerRole !== Role.DON_MAFIA) return;
+            if (playerRole !== Role.MAFIA && playerRole !== Role.DON_MAFIA && 
+                playerRole !== Role.GODFATHER && playerRole !== Role.MAFIOSO) return;
             actionType = ActionType.MAFIA_KILL;
             break;
           case GamePhase.DON_ACTION:
@@ -305,11 +306,11 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
             actionType = ActionType.DON_INVESTIGATE;
             break;
           case GamePhase.DETECTIVE_ACTION:
-            if (playerRole !== Role.DETECTIVE) return;
+            if (playerRole !== Role.DETECTIVE && playerRole !== Role.DEPUTY_DETECTIVE) return;
             actionType = ActionType.DETECTIVE_INVESTIGATE;
             break;
           case GamePhase.DOCTOR_ACTION:
-            if (playerRole !== Role.DOCTOR) return;
+            if (playerRole !== Role.DOCTOR && playerRole !== Role.NURSE) return;
             actionType = ActionType.DOCTOR_SAVE;
             break;
           case GamePhase.VIGILANTE_ACTION:
@@ -355,7 +356,8 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
             io.sockets.sockets.forEach((s: any) => {
               if (s.currentRoom === roomId) {
                 const sRole = gameState.roleAssignments.get(s.oderId) as Role;
-                if (sRole === Role.MAFIA || sRole === Role.DON_MAFIA) {
+                if (sRole === Role.MAFIA || sRole === Role.DON_MAFIA || 
+                    sRole === Role.GODFATHER || sRole === Role.MAFIOSO) {
                   s.emit('mafia:voteUpdate', mafiaVotes);
                 }
               }
@@ -384,7 +386,8 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
         : PlayerStatus.DEAD;
 
       // Only alive mafia can chat during night
-      if (playerRole !== Role.MAFIA && playerRole !== Role.DON_MAFIA) return;
+      if (playerRole !== Role.MAFIA && playerRole !== Role.DON_MAFIA && 
+          playerRole !== Role.GODFATHER && playerRole !== Role.MAFIOSO) return;
       if (playerStatus !== PlayerStatus.ALIVE) return;
 
       const currentPhase = gameState.phase as GamePhase;
@@ -404,7 +407,8 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
         io.sockets.sockets.forEach((s: any) => {
           if (s.currentRoom === roomId) {
             const sRole = gameState.roleAssignments.get(s.oderId) as Role;
-            if (sRole === Role.MAFIA || sRole === Role.DON_MAFIA) {
+            if (sRole === Role.MAFIA || sRole === Role.DON_MAFIA || 
+                sRole === Role.GODFATHER || sRole === Role.MAFIOSO) {
               s.emit('mafia:chat', message);
             }
           }
@@ -691,7 +695,8 @@ function setupGameEventListeners(
       if (s.currentRoom === roomCode) {
         const sRole = gameState.roleAssignments.get(s.oderId) as Role;
         if (sRole === role || 
-            (role === Role.MAFIA && (sRole === Role.MAFIA || sRole === Role.DON_MAFIA))) {
+            (role === Role.MAFIA && (sRole === Role.MAFIA || sRole === Role.DON_MAFIA || 
+              sRole === Role.GODFATHER || sRole === Role.MAFIOSO))) {
           s.emit('timer:roleSpecific', { remaining, forRole: role });
         }
       }
@@ -716,7 +721,8 @@ function setupGameEventListeners(
         const sRole = gameState.roleAssignments.get(s.oderId) as Role;
         console.log('[Handlers] Checking socket', s.oderId, 'has role:', sRole);
         if (sRole === role || 
-            (role === Role.MAFIA && (sRole === Role.MAFIA || sRole === Role.DON_MAFIA))) {
+            (role === Role.MAFIA && (sRole === Role.MAFIA || sRole === Role.DON_MAFIA || 
+              sRole === Role.GODFATHER || sRole === Role.MAFIOSO))) {
           console.log('[Handlers] MATCHED! Sending night:actionRequired to socket', s.oderId);
           s.emit('night:actionRequired', { role, timer, validTargets });
           matchedCount++;

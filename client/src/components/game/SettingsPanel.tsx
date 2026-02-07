@@ -155,7 +155,7 @@ export default function SettingsPanel({
                   disabled={!isHost}
                   className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-white disabled:opacity-50"
                 >
-                  {[4, 5, 6, 7, 8].map(n => (
+                  {[3, 4, 5, 6, 7, 8].map(n => (
                     <option key={n} value={n}>{n} players</option>
                   ))}
                 </select>
@@ -168,14 +168,14 @@ export default function SettingsPanel({
                   disabled={!isHost}
                   className="w-full bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-white disabled:opacity-50"
                 >
-                  {[8, 10, 12, 14, 16].map(n => (
+                  {[8, 10, 12, 14, 16, 20, 24, 30].map(n => (
                     <option key={n} value={n}>{n} players</option>
                   ))}
                 </select>
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              Current players: {playerCount} | Mafia count: {Math.ceil(playerCount / 4)}
+              Current players: {playerCount} | Mafia count: {Math.floor(playerCount / 4)}
             </p>
           </div>
 
@@ -213,9 +213,33 @@ export default function SettingsPanel({
               <RoleToggle
                 icon={<FaTheaterMasks className="text-pink-400" />}
                 label="Jester"
-                description="Wins if voted out"
+                description="Wins if voted out (13+ players)"
                 enabled={localSettings.enableJester ?? true}
                 onChange={(v) => handleChange('enableJester', v)}
+                disabled={!isHost}
+              />
+              <RoleToggle
+                icon={<FaSkull className="text-red-500" />}
+                label="Godfather"
+                description="Mafia boss, appears innocent"
+                enabled={localSettings.enableGodfather ?? false}
+                onChange={(v) => handleChange('enableGodfather', v)}
+                disabled={!isHost}
+              />
+              <RoleToggle
+                icon={<FaShieldAlt className="text-cyan-400" />}
+                label="Advanced Roles"
+                description="Bodyguard, Nurse, Mayor"
+                enabled={localSettings.enableAdvancedRoles ?? false}
+                onChange={(v) => handleChange('enableAdvancedRoles', v)}
+                disabled={!isHost}
+              />
+              <RoleToggle
+                icon={<FaTheaterMasks className="text-purple-400" />}
+                label="Neutral Roles"
+                description="Jester, Serial Killer (13+)"
+                enabled={localSettings.enableNeutralRoles ?? false}
+                onChange={(v) => handleChange('enableNeutralRoles', v)}
                 disabled={!isHost}
               />
             </div>

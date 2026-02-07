@@ -18,12 +18,15 @@ const roleIcons: Record<Role, React.ReactNode> = {
   [Role.VILLAGER]: <FaUserSecret className="text-6xl" />,
   [Role.MAFIA]: <FaSkull className="text-6xl" />,
   [Role.GODFATHER]: <FaSkull className="text-6xl" />,
+  [Role.MAFIOSO]: <FaSkull className="text-6xl" />,
   [Role.MAFIA_GOON]: <FaSkull className="text-6xl" />,
   [Role.MAFIA_HEALER]: <FaHeartbeat className="text-6xl" />,
   [Role.SILENCER]: <FaTheaterMasks className="text-6xl" />,
   [Role.DON_MAFIA]: <FaSkull className="text-6xl" />,
   [Role.DETECTIVE]: <FaSearch className="text-6xl" />,
+  [Role.DEPUTY_DETECTIVE]: <FaSearch className="text-6xl" />,
   [Role.DOCTOR]: <FaHeartbeat className="text-6xl" />,
+  [Role.NURSE]: <FaHeartbeat className="text-6xl" />,
   [Role.BODYGUARD]: <FaCrosshairs className="text-6xl" />,
   [Role.JAILOR]: <FaUserSecret className="text-6xl" />,
   [Role.VIGILANTE]: <FaCrosshairs className="text-6xl" />,
@@ -39,12 +42,15 @@ const roleDescriptions: Record<Role, string> = {
   [Role.VILLAGER]: 'Find and eliminate the Mafia through careful observation and voting. Trust no one.',
   [Role.MAFIA]: 'Work with your team to eliminate villagers each night. Blend in during the day.',
   [Role.GODFATHER]: 'Lead the Mafia. You appear innocent to Detective investigations.',
+  [Role.MAFIOSO]: 'Backup killer for the Mafia. Step up if the Godfather is eliminated.',
   [Role.MAFIA_GOON]: 'Work with your Mafia team to eliminate townspeople each night.',
   [Role.MAFIA_HEALER]: 'Protect one Mafia member from death each night.',
   [Role.SILENCER]: 'Prevent one player from speaking during the day phase.',
   [Role.DON_MAFIA]: 'Lead the Mafia. You can detect if a player is the Detective.',
   [Role.DETECTIVE]: 'Investigate one player each night to learn if they are Mafia.',
+  [Role.DEPUTY_DETECTIVE]: 'You inherit the Detective\'s power if they are eliminated.',
   [Role.DOCTOR]: 'Protect one player each night from the Mafia\'s attack.',
+  [Role.NURSE]: 'You inherit the Doctor\'s power if they are eliminated.',
   [Role.BODYGUARD]: 'Protect one player each night. You will die if they are attacked.',
   [Role.JAILOR]: 'Jail one player each night, blocking all their actions.',
   [Role.VIGILANTE]: 'Once per game, you can eliminate a player you suspect is Mafia.',
@@ -59,7 +65,7 @@ const roleDescriptions: Record<Role, string> = {
 export default function RoleReveal({ role, teammates, onComplete }: RoleRevealProps) {
   const [stage, setStage] = useState<'intro' | 'reveal' | 'info'>('intro');
   const roleData = ROLE_DISPLAY[role];
-  const isMafia = [Role.MAFIA, Role.DON_MAFIA].includes(role);
+  const isMafia = [Role.MAFIA, Role.DON_MAFIA, Role.GODFATHER, Role.MAFIOSO].includes(role);
 
   useEffect(() => {
     // Auto-advance stages

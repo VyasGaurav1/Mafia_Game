@@ -26,7 +26,8 @@ export default function GameEndScreen({
 }: GameEndScreenProps) {
   const didWin = (winner === WinCondition.MAFIA_WINS && myTeam === Team.MAFIA) ||
                  (winner === WinCondition.TOWN_WINS && myTeam === Team.TOWN) ||
-                 (winner === WinCondition.JESTER_WINS && myRole === Role.JESTER);
+                 (winner === WinCondition.JESTER_WINS && myRole === Role.JESTER) ||
+                 (winner === WinCondition.SERIAL_KILLER_WINS && myRole === Role.SERIAL_KILLER);
   
   const getWinnerTitle = () => {
     switch (winner) {
@@ -36,6 +37,8 @@ export default function GameEndScreen({
         return 'Village Wins!';
       case WinCondition.JESTER_WINS:
         return 'Jester Wins!';
+      case WinCondition.SERIAL_KILLER_WINS:
+        return 'Serial Killer Wins!';
       default:
         return 'Game Over';
     }
@@ -49,6 +52,8 @@ export default function GameEndScreen({
         return 'All Mafia members have been eliminated';
       case WinCondition.JESTER_WINS:
         return 'The Jester fooled everyone!';
+      case WinCondition.SERIAL_KILLER_WINS:
+        return 'The Serial Killer eliminated all opposition!';
       default:
         return '';
     }
@@ -62,6 +67,8 @@ export default function GameEndScreen({
         return <FaTrophy className="text-6xl" />;
       case WinCondition.JESTER_WINS:
         return <FaTheaterMasks className="text-6xl" />;
+      case WinCondition.SERIAL_KILLER_WINS:
+        return <FaSkull className="text-6xl" />;
       default:
         return <FaTrophy className="text-6xl" />;
     }
@@ -89,6 +96,13 @@ export default function GameEndScreen({
           border: 'border-pink-500/30',
           text: 'text-pink-400',
           button: 'bg-pink-600 hover:bg-pink-500'
+        };
+      case WinCondition.SERIAL_KILLER_WINS:
+        return {
+          bg: 'from-purple-900/50 to-dark-900',
+          border: 'border-purple-500/30',
+          text: 'text-purple-400',
+          button: 'bg-purple-600 hover:bg-purple-500'
         };
       default:
         return {
