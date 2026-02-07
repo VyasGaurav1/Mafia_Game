@@ -71,11 +71,12 @@ export default function Modal({
               relative w-full ${sizes[size]}
               bg-dark-800 border border-dark-500 rounded-2xl 
               shadow-2xl overflow-hidden
+              max-h-[90vh] flex flex-col
             `}
           >
             {/* Header */}
             {(title || showClose) && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-dark-600 flex-shrink-0">
                 {title && (
                   <h2 className="text-xl font-semibold text-white">{title}</h2>
                 )}
@@ -90,8 +91,8 @@ export default function Modal({
               </div>
             )}
 
-            {/* Content */}
-            <div className="px-6 py-4">
+            {/* Content - Scrollable */}
+            <div className="px-6 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-dark-600 scrollbar-track-transparent">
               {children}
             </div>
           </motion.div>

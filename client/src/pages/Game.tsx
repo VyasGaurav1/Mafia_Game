@@ -302,21 +302,23 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 container mx-auto px-4 py-4 min-h-screen flex flex-col">
-        {/* Game Header */}
-        <GameHeader
-          phase={currentPhase}
-          dayNumber={dayNumber}
-          timer={timer}
-          roomCode={room.code}
-          isNight={isNightPhase}
-          onLeave={handleLeave}
-        />
+      <div className="relative z-10 h-screen flex flex-col">
+        {/* Game Header - Fixed */}
+        <div className="flex-shrink-0 px-4 pt-4">
+          <GameHeader
+            phase={currentPhase}
+            dayNumber={dayNumber}
+            timer={timer}
+            roomCode={room.code}
+            isNight={isNightPhase}
+            onLeave={handleLeave}
+          />
+        </div>
 
-        {/* Main game area */}
-        <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-          {/* Player grid - Left/Center */}
-          <div className="lg:col-span-2 flex flex-col">
+        {/* Main game area - Scrollable */}
+        <main className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 px-4 py-4 overflow-hidden">
+          {/* Player grid - Left/Center - Scrollable */}
+          <div className="lg:col-span-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-dark-600 scrollbar-track-transparent pr-2">
             {/* Action prompt for special roles */}
             <AnimatePresence>
               {shouldShowActionPrompt && myRole && (
@@ -432,8 +434,8 @@ export default function Game() {
             </AnimatePresence>
           </div>
 
-          {/* Chat panel - Right */}
-          <div className="lg:col-span-1">
+          {/* Chat panel - Right - Fixed height with internal scroll */}
+          <div className="lg:col-span-1 h-full flex flex-col">
             <ChatPanel
               messages={chatMessages}
               mafiaMessages={mafiaMessages}
@@ -447,7 +449,8 @@ export default function Game() {
           </div>
         </main>
 
-        {/* Player status bar */}
+        {/* Player status bar - Fixed at bottom */}
+        <div className="flex-shrink-0 px-4 pb-4">
         <footer className="mt-4 py-3 px-4 bg-dark-800/80 backdrop-blur rounded-xl flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
@@ -491,6 +494,7 @@ export default function Game() {
             </div>
           )}
         </footer>
+        </div>
       </div>
     </div>
   );
