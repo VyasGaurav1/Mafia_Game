@@ -6,8 +6,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IVoteLogDocument extends Document {
-  roomId: mongoose.Types.ObjectId;
-  gameId: mongoose.Types.ObjectId;
+  roomId: string;
+  gameId: string;
   dayNumber: number;
   voterId: string;
   voterUsername: string;
@@ -21,13 +21,11 @@ export interface IVoteLogDocument extends Document {
 
 const voteLogSchema = new Schema<IVoteLogDocument>({
   roomId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Room',
+    type: String,
     required: true
   },
   gameId: {
-    type: Schema.Types.ObjectId,
-    ref: 'GameState',
+    type: String,
     required: true
   },
   dayNumber: {

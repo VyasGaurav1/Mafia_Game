@@ -7,8 +7,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 import { ActionType, GamePhase, Role } from '../types';
 
 export interface IActionLogDocument extends Document {
-  roomId: mongoose.Types.ObjectId;
-  gameId: mongoose.Types.ObjectId;
+  roomId: string;
+  gameId: string;
   dayNumber: number;
   phase: string;
   playerId: string;
@@ -23,13 +23,11 @@ export interface IActionLogDocument extends Document {
 
 const actionLogSchema = new Schema<IActionLogDocument>({
   roomId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Room',
+    type: String,
     required: true
   },
   gameId: {
-    type: Schema.Types.ObjectId,
-    ref: 'GameState',
+    type: String,
     required: true
   },
   dayNumber: {

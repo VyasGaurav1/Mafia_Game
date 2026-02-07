@@ -51,7 +51,7 @@ export interface IRoomDocument extends Document {
     revealRolesOnDeath: boolean;
     tieBreaker: string;
   };
-  gameId?: mongoose.Types.ObjectId;
+  gameId?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -133,7 +133,7 @@ const roomSchema = new Schema<IRoomDocument>({
     revealRolesOnDeath: { type: Boolean, default: true },
     tieBreaker: { type: String, default: 'no_elimination' }
   },
-  gameId: { type: Schema.Types.ObjectId, ref: 'GameState' },
+  gameId: { type: String },
   isActive: { type: Boolean, default: true }
 }, {
   timestamps: true

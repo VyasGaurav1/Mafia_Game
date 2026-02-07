@@ -7,7 +7,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 import { GamePhase, WinCondition, Team, Role } from '../types';
 
 export interface IGameStateDocument extends Document {
-  roomId: mongoose.Types.ObjectId;
+  roomId: string;
   roomCode: string;
   phase: string;
   dayNumber: number;
@@ -62,8 +62,7 @@ export interface IGameStateDocument extends Document {
 
 const gameStateSchema = new Schema<IGameStateDocument>({
   roomId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Room',
+    type: String,
     required: true
   },
   roomCode: {
