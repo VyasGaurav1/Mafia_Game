@@ -364,6 +364,7 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   'room:create': (payload: RoomCreatePayload, callback: (response: { success: boolean; room?: IRoomPublic; error?: string }) => void) => void;
   'room:join': (payload: RoomJoinPayload, callback: (response: { success: boolean; room?: IRoomPublic; error?: string }) => void) => void;
+  'room:list': (callback: (response: { success: boolean; rooms: IRoomPublic[]; error?: string }) => void) => void;
   'room:leave': (roomId: string) => void;
   'room:kick': (data: { roomId: string; targetId: string }) => void;
   'room:updateSettings': (data: { roomId: string; settings: Partial<IRoomSettings> }) => void;

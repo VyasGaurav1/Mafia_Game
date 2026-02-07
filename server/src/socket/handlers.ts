@@ -45,6 +45,19 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
     // ==========================================
 
     /**
+     * List public rooms that are open (in lobby, not started)
+     */
+    socket.on('room:list', async (callback) => {
+      try {
+        const rooms = await roomManager.getPublicRooms();
+        callback({ success: true, rooms });
+      } catch (error: any) {
+        logger.error('Error listing rooms:', error);
+        callback({ success: false, rooms: [], error: error.message });
+      }
+    });
+
+    /**
      * Create a new room
      */
     socket.on('room:create', async (payload, callback) => {

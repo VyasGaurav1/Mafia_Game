@@ -233,6 +233,26 @@ class SocketService {
   }
 
   /**
+   * List public rooms available to join
+   */
+  listPublicRooms(): Promise<IRoom[]> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+
+      this.socket.emit('room:list', (response: { success: boolean; rooms?: IRoom[]; error?: string }) => {
+        if (response.success && response.rooms) {
+          resolve(response.rooms);
+        } else {
+          reject(new Error(response.error || 'Failed to list rooms'));
+        }
+      });
+    });
+  }
+
+  /**
    * Create a new room
    */
   createRoom(name: string, visibility: 'PUBLIC' | 'PRIVATE', settings?: any): Promise<IRoom> {
