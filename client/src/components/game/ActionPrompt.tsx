@@ -1,11 +1,12 @@
 /**
  * Action Prompt Component
- * Night action selection UI for special roles
+ * Night action selection UI for special roles - Modal popup
  */
 
 import { motion } from 'framer-motion';
 import { FaSkull, FaSearch, FaHeartbeat, FaCrown, FaCrosshairs, FaCheck, FaQuestionCircle } from 'react-icons/fa';
 import { Role, IPlayer, ROLE_DISPLAY } from '@/types';
+import Modal from '@/components/ui/Modal';
 
 interface ActionPromptProps {
   role: Role;
@@ -14,6 +15,8 @@ interface ActionPromptProps {
   onSelectTarget: (targetId: string | null) => void;
   onConfirmAction: () => void;
   investigationResult?: { targetId: string; result: string } | null;
+  isOpen?: boolean;
+  timeRemaining?: number;
 }
 
 const rolePrompts: Record<Role, { icon: React.ReactNode; title: string; description: string }> = {
@@ -130,7 +133,9 @@ export default function ActionPrompt({
   selectedTarget,
   onSelectTarget,
   onConfirmAction,
-  investigationResult
+  investigationResult,
+  isOpen = true,
+  timeRemaining
 }: ActionPromptProps) {
   const prompt = rolePrompts[role] || rolePrompts[Role.VILLAGER];
   const roleData = ROLE_DISPLAY[role];
@@ -142,16 +147,11 @@ export default function ActionPrompt({
     const targetPlayer = validTargets.find(p => p.oderId === investigationResult.targetId);
     
     return (
+      <Modal isOpen={isOpen} onClose={() => {}} title="Investigation Result" size="sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`
-          bg-gradient-to-b p-6 rounded-xl border-2 text-center
-          ${role === Role.DETECTIVE 
-            ? 'from-blue-900/40 to-dark-900 border-blue-500/30' 
-            : 'from-red-900/40 to-dark-900 border-red-500/30'
-          }
-        `}
+        className="text-center py-4"
       >
         <div className={`text-5xl mb-4 ${role === Role.DETECTIVE ? 'text-blue-400' : 'text-red-400'}`}>
           <FaSearch />
@@ -175,36 +175,37 @@ export default function ActionPrompt({
           {investigationResult.result}
         </motion.div>
       </motion.div>
+      </Modal>
     );
   }
 
   return (
+    <Modal 
+      isOpen={isOpen} 
+      onClose={() => {}} 
+      title={prompt.title}
+      size="md"
+    >
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`
-        bg-gradient-to-b p-6 rounded-xl border-2
-        ${isMafiaRole 
-          ? 'from-red-900/40 to-dark-900 border-red-500/30' 
-          : role === Role.DETECTIVE
-            ? 'from-blue-900/40 to-dark-900 border-blue-500/30'
-            : role === Role.DOCTOR
-              ? 'from-green-900/40 to-dark-900 border-green-500/30'
-              : 'from-purple-900/40 to-dark-900 border-purple-500/30'
-        }
-      `}
+      className="space-y-4"
     >
       {/* Header */}
-      <div className="text-center mb-6">
-        <div className={`inline-block p-3 rounded-full mb-3 ${roleData.bgColor}`}>
+      <div className="text-center mb-4">
+        <div className={`inline-block p-3 rounded-full mb-2 ${roleData.bgColor}`}>
           <span className={roleData.color}>{prompt.icon}</span>
         </div>
-        <h3 className={`text-xl font-bold ${roleData.color}`}>{prompt.title}</h3>
         <p className="text-gray-400 text-sm">{prompt.description}</p>
+        {timeRemaining !== undefined && (
+          <div className="mt-2 text-amber-400 text-sm font-semibold">
+            ⏱ {timeRemaining}s remaining
+          </div>
+        )}
       </div>
 
       {/* Target selection grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6 max-h-48 overflow-y-auto">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-dark-600">
         {validTargets.map((player) => {
           const isSelected = selectedTarget === player.oderId;
           
@@ -276,5 +277,6 @@ export default function ActionPrompt({
         </button>
       )}
     </motion.div>
+    </Modal>
   );
 }

@@ -331,11 +331,8 @@ export default function Landing() {
             ) : publicRooms.length === 0 ? (
               <div className="text-center py-10">
                 <FaUsers className="text-3xl text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-400 mb-1 text-sm">No open games right now</p>
-                <p className="text-gray-500 text-xs mb-3">Create a public game and invite your friends!</p>
-                <Button variant="primary" size="sm" onClick={handlePlayClick} icon={<FaPlay />}>
-                  Create Game
-                </Button>
+                <p className="text-gray-400 text-sm">No open games right now</p>
+                <p className="text-gray-500 text-xs mt-1">Use the "Create Game" button above to start a new public game!</p>
               </div>
             ) : (
               <div className="space-y-2">

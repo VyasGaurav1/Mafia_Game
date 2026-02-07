@@ -320,22 +320,22 @@ export default function Game() {
             {/* Action prompt for special roles */}
             <AnimatePresence>
               {shouldShowActionPrompt && myRole && (
-                <div className="mb-4">
-                  <ActionPrompt
-                    role={myRole}
-                    validTargets={validTargetPlayers}
-                    selectedTarget={selectedTarget}
-                    onSelectTarget={setSelectedTarget}
-                    onConfirmAction={handleNightAction}
-                    investigationResult={investigationResult ? {
-                      targetId: investigationResult.targetId,
-                      result: investigationResult.isGuilty ? 'Mafia' : 'Innocent'
-                    } : donResult ? {
-                      targetId: donResult.targetId,
-                      result: donResult.isDetective ? 'Detective' : 'Not Detective'
-                    } : null}
-                  />
-                </div>
+                <ActionPrompt
+                  role={myRole}
+                  validTargets={validTargetPlayers}
+                  selectedTarget={selectedTarget}
+                  onSelectTarget={setSelectedTarget}
+                  onConfirmAction={handleNightAction}
+                  isOpen={shouldShowActionPrompt}
+                  timeRemaining={timer}
+                  investigationResult={investigationResult ? {
+                    targetId: investigationResult.targetId,
+                    result: investigationResult.isGuilty ? 'Mafia' : 'Innocent'
+                  } : donResult ? {
+                    targetId: donResult.targetId,
+                    result: donResult.isDetective ? 'Detective' : 'Not Detective'
+                  } : null}
+                />
               )}
             </AnimatePresence>
 
@@ -416,18 +416,18 @@ export default function Game() {
             {/* Voting panel during voting phase */}
             <AnimatePresence>
               {currentPhase === GamePhase.VOTING && (
-                <div className="mt-4">
-                  <VotingPanel
-                    players={alivePlayers}
-                    votes={votes}
-                    currentUserId={user.oderId}
-                    hasVoted={!!myVote}
-                    onVote={handleVote}
-                    onSkipVote={handleSkipVote}
-                    requiredVotes={requiredVotes}
-                    canVote={playerAlive && !myVote}
-                  />
-                </div>
+                <VotingPanel
+                  players={alivePlayers}
+                  votes={votes}
+                  currentUserId={user.oderId}
+                  hasVoted={!!myVote}
+                  onVote={handleVote}
+                  onSkipVote={handleSkipVote}
+                  requiredVotes={requiredVotes}
+                  canVote={playerAlive && !myVote}
+                  isOpen={currentPhase === GamePhase.VOTING}
+                  timeRemaining={timer}
+                />
               )}
             </AnimatePresence>
           </div>

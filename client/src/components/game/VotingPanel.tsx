@@ -1,11 +1,12 @@
 /**
  * Voting Panel Component
- * Handles voting phase UI with current votes display
+ * Handles voting phase UI with current votes display - Modal popup
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaGavel, FaVoteYea, FaCheck, FaTimes, FaUserSlash } from 'react-icons/fa';
 import { IPlayer, PlayerStatus } from '@/types';
+import Modal from '@/components/ui/Modal';
 
 interface VotingPanelProps {
   players: IPlayer[];
@@ -16,6 +17,8 @@ interface VotingPanelProps {
   onSkipVote: () => void;
   requiredVotes: number;
   canVote: boolean;
+  isOpen?: boolean;
+  timeRemaining?: number;
 }
 
 export default function VotingPanel({
@@ -26,7 +29,9 @@ export default function VotingPanel({
   onVote,
   onSkipVote,
   requiredVotes,
-  canVote
+  canVote,
+  isOpen = true,
+  timeRemaining
 }: VotingPanelProps) {
   const alivePlayers = players.filter(p => p.status === PlayerStatus.ALIVE);
   const totalVotes = Object.values(votes).reduce((sum, v) => sum + v, 0);
@@ -43,30 +48,37 @@ export default function VotingPanel({
   const leaders = sortedPlayers.filter(p => (votes[p.oderId] || 0) === maxVotes && maxVotes > 0);
 
   return (
+    <Modal isOpen={isOpen} onClose={() => {}} title="Town Vote" size="md">
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-dark-800/90 backdrop-blur-sm rounded-xl border border-dark-700 overflow-hidden"
+      className="space-y-3"
     >
-      {/* Header */}
-      <div className="bg-blood-600/20 border-b border-blood-500/30 px-4 py-3">
-        <div className="flex items-center justify-between">
+      {/* Header info */}
+      <div className="bg-blood-600/10 border border-blood-500/30 px-4 py-3 rounded-lg">
+        <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <FaGavel className="text-blood-400" />
-            <h3 className="font-semibold text-white">Town Vote</h3>
+            <span className="font-semibold text-white">Cast Your Vote</span>
           </div>
-          <div className="text-sm text-gray-400">
-            {totalVotes} / {alivePlayers.length} voted
-          </div>
+          {timeRemaining !== undefined && (
+            <div className="text-amber-400 text-sm font-semibold">
+              ⏱ {timeRemaining}s
+            </div>
+          )}
         </div>
-        <p className="text-xs text-gray-400 mt-1">
-          {requiredVotes} votes needed for elimination
-        </p>
+        <div className="flex items-center justify-between text-sm">
+          <p className="text-gray-400">
+            {totalVotes} / {alivePlayers.length} voted
+          </p>
+          <p className="text-gray-400">
+            {requiredVotes} votes needed
+          </p>
+        </div>
       </div>
 
       {/* Voting list */}
-      <div className="p-4 space-y-2 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-dark-600">
-        <AnimatePresence>
+      <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-dark-600 pr-1">\n        <AnimatePresence>
           {sortedPlayers.map((player) => {
             const playerVotes = votes[player.oderId] || 0;
             const isCurrentUser = player.oderId === currentUserId;
@@ -159,38 +171,33 @@ export default function VotingPanel({
 
       {/* Skip vote option */}
       {canVote && !hasVoted && (
-        <div className="p-4 border-t border-dark-700">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onSkipVote}
-            className="w-full py-2 bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-lg flex items-center justify-center gap-2 transition-colors"
-          >
-            <FaUserSlash />
-            <span>Skip Vote (No Lynch)</span>
-          </motion.button>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onSkipVote}
+          className="w-full py-2 bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-lg flex items-center justify-center gap-2 transition-colors"
+        >
+          <FaUserSlash />
+          <span>Skip Vote (No Lynch)</span>
+        </motion.button>
       )}
 
       {/* Already voted indicator */}
       {hasVoted && (
-        <div className="p-4 border-t border-dark-700">
-          <div className="flex items-center justify-center gap-2 text-green-400">
-            <FaCheck />
-            <span>Vote submitted</span>
-          </div>
+        <div className="flex items-center justify-center gap-2 text-green-400 py-2">
+          <FaCheck />
+          <span>Vote submitted</span>
         </div>
       )}
 
       {/* Cannot vote indicator */}
       {!canVote && !hasVoted && (
-        <div className="p-4 border-t border-dark-700">
-          <div className="flex items-center justify-center gap-2 text-gray-500">
-            <FaTimes />
-            <span>You cannot vote</span>
-          </div>
+        <div className="flex items-center justify-center gap-2 text-gray-500 py-2">
+          <FaTimes />
+          <span>You cannot vote</span>
         </div>
       )}
     </motion.div>
+    </Modal>
   );
 }
