@@ -350,6 +350,15 @@ export class GameStateMachine extends EventEmitter {
       case GamePhase.DAY_DISCUSSION:
         // Resolve night actions first
         await this.resolveNightActions();
+        
+        // Check win conditions after night actions resolve
+        const winnerAfterNight = this.checkWinConditions();
+        if (winnerAfterNight) {
+          this.gameState.currentTimer = this.timers.dayDiscussion;
+          this.startPhaseTimer(this.timers.dayDiscussion, () => this.transitionTo(GamePhase.GAME_OVER));
+          break;
+        }
+        
         this.gameState.currentTimer = this.timers.dayDiscussion;
         this.startPhaseTimer(this.timers.dayDiscussion, () => this.transitionTo(GamePhase.VOTING));
         break;
@@ -422,6 +431,66 @@ export class GameStateMachine extends EventEmitter {
    * Advance to next night phase
    * Finalizes current phase actions before moving to next
    */
+  /**
+   * Check if current night phase actions are complete and advance if so
+   */
+  private async checkAndAdvanceNightPhase(): Promise<void> {
+    if (!this.gameState || !this.room) return;
+
+    const currentPhase = this.gameState.phase as GamePhase;
+    let isComplete = false;
+
+    switch (currentPhase) {
+      case GamePhase.MAFIA_ACTION: {
+        // Count alive mafia members
+        const aliveMafia = this.gameState.alivePlayers.filter((playerId: string) => {
+          const role = this.gameState!.roleAssignments.get(playerId) as Role;
+          return role === Role.MAFIA || role === Role.DON_MAFIA || 
+                 role === Role.GODFATHER || role === Role.MAFIOSO;
+        });
+        // Check if all alive mafia have voted
+        isComplete = aliveMafia.length === this.gameState.nightActions.mafiaVotes.size;
+        break;
+      }
+
+      case GamePhase.DETECTIVE_ACTION: {
+        // Detective has acted if target is set
+        isComplete = this.gameState.nightActions.detectiveTarget !== undefined;
+        break;
+      }
+
+      case GamePhase.DON_ACTION: {
+        // Don has acted if target is set
+        isComplete = this.gameState.nightActions.donTarget !== undefined;
+        break;
+      }
+
+      case GamePhase.DOCTOR_ACTION: {
+        // Doctor has acted if target is set
+        isComplete = this.gameState.nightActions.doctorTarget !== undefined;
+        break;
+      }
+
+      case GamePhase.VIGILANTE_ACTION: {
+        // Vigilante has acted if target is set OR if they've already used their kill
+        const vigilanteId = this.getPlayerIdByRole(Role.VIGILANTE);
+        const hasUsedKill = vigilanteId ? this.gameState.vigilanteKillUsed.get(vigilanteId) : false;
+        isComplete = this.gameState.nightActions.vigilanteTarget !== undefined || hasUsedKill === true;
+        break;
+      }
+    }
+
+    if (isComplete) {
+      // Clear timer and immediately advance
+      this.clearTimers();
+      logger.info(`All actions complete for ${currentPhase} - advancing immediately`, { roomCode: this.room.code, phase: currentPhase });
+      await this.advanceNightPhase();
+    }
+  }
+
+  /**
+   * Advance to the next night phase
+   */
   private async advanceNightPhase(): Promise<void> {
     if (!this.gameState) return;
 
@@ -489,6 +558,9 @@ export class GameStateMachine extends EventEmitter {
             : ROLE_CONFIGS[targetRole].team === Team.MAFIA;
           this.gameState.nightActions.detectiveResult = isGuilty;
           await this.logAction(playerId, actionType, targetId, { isGuilty });
+          
+          // Check if action is complete and auto-advance
+          await this.checkAndAdvanceNightPhase();
           return true;
         }
         break;
@@ -500,6 +572,9 @@ export class GameStateMachine extends EventEmitter {
           const isDetective = targetRole === Role.DETECTIVE;
           this.gameState.nightActions.donResult = isDetective;
           await this.logAction(playerId, actionType, targetId, { isDetective });
+          
+          // Check if action is complete and auto-advance
+          await this.checkAndAdvanceNightPhase();
           return true;
         }
         break;
@@ -514,6 +589,9 @@ export class GameStateMachine extends EventEmitter {
           this.gameState.nightActions.doctorTarget = targetId;
           this.gameState.lastDoctorSave.set(playerId, targetId);
           await this.logAction(playerId, actionType, targetId);
+          
+          // Check if action is complete and auto-advance
+          await this.checkAndAdvanceNightPhase();
           return true;
         }
         break;
@@ -526,12 +604,21 @@ export class GameStateMachine extends EventEmitter {
           this.gameState.nightActions.vigilanteTarget = targetId;
           this.gameState.vigilanteKillUsed.set(playerId, true);
           await this.logAction(playerId, actionType, targetId);
+          
+          // Check if action is complete and auto-advance
+          await this.checkAndAdvanceNightPhase();
           return true;
         }
         break;
     }
 
     await this.saveGameState();
+    
+    // Check if mafia action is complete and auto-advance
+    if (actionType === ActionType.MAFIA_KILL) {
+      await this.checkAndAdvanceNightPhase();
+    }
+    
     return true;
   }
 
@@ -733,6 +820,15 @@ export class GameStateMachine extends EventEmitter {
     // Emit vote update
     const voteCounts = this.calculateVoteCounts();
     this.emit('vote:update', voteCounts);
+
+    // Check if all alive players have voted
+    const allVoted = this.gameState.alivePlayers.length === this.gameState.votes.size;
+    if (allVoted) {
+      // Clear the timer and immediately transition to RESOLUTION
+      this.clearTimers();
+      logger.info(`All players voted - advancing to resolution immediately`, { roomCode: this.room.code });
+      await this.transitionTo(GamePhase.RESOLUTION);
+    }
 
     return true;
   }
