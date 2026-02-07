@@ -16,8 +16,6 @@ import {
   DEFAULT_TIMER_SETTINGS,
   ROLE_CONFIGS
 } from '../types';
-import { GameState, IGameStateDocument } from '../models/GameState';
-import { ActionLog } from '../models/ActionLog';
 import logger, { gameLogger } from '../utils/logger';
 import { RoleDistributionService, RoleConfig } from './RoleDistribution';
 import { IRoom } from './RoomManager';
@@ -61,7 +59,7 @@ export interface GameEvents {
 }
 
 export class GameStateMachine extends EventEmitter {
-  private gameState: IGameStateDocument | null = null;
+  private gameState: any | null = null;
   private room: IRoom | null = null;
   private timers: ITimerSettings;
   private phaseTimer: NodeJS.Timeout | null = null;
@@ -78,7 +76,7 @@ export class GameStateMachine extends EventEmitter {
   /**
    * Initialize a new game
    */
-  async initializeGame(room: IRoom): Promise<IGameStateDocument> {
+  async initializeGame(room: IRoom): Promise<any> {
     this.room = room;
     this.timers = room.settings.timers;
 
@@ -91,8 +89,9 @@ export class GameStateMachine extends EventEmitter {
       teamAssignments.set(oderId, config.team);
     });
 
-    // Create game state
-    const gameState = new GameState({
+    // Create game state (in-memory only)
+    const gameState = {
+      _id: room._id,
       roomId: room._id,
       roomCode: room.code,
       phase: GamePhase.LOBBY,
@@ -111,13 +110,12 @@ export class GameStateMachine extends EventEmitter {
       vigilanteKillUsed: new Map(),
       winningPlayers: [],
       startedAt: new Date()
-    });
+    };
 
-    await gameState.save();
     this.gameState = gameState;
 
     // Update room with game reference (in-memory only)
-    room.gameId = gameState._id.toString();
+    room.gameId = gameState._id;
 
     gameLogger.gameStarted(room.code, room.players.length);
 
@@ -125,8 +123,11 @@ export class GameStateMachine extends EventEmitter {
   }
 
   /**
-   * Assign roles based on player count and settings using RoleDistributionService
+   * Save game state (no-op for in-memory mode)
    */
+  private async saveGameState(): Promise<void> {
+    // No-op - all state is in-memory
+  }
   private assignRoles(room: IRoom): Map<string, string> {
     const playerCount = room.players.length;
     const settings = room.settings;
@@ -200,7 +201,7 @@ export class GameStateMachine extends EventEmitter {
     
     this.startPhaseTimer(this.timers.voting, () => this.transitionTo(GamePhase.RESOLUTION));
     
-    await this.gameState.save();
+    await this.saveGameState();
     
     gameLogger.phaseChanged(this.room.code, GamePhase.VOTING, this.gameState.dayNumber);
     
@@ -225,7 +226,7 @@ export class GameStateMachine extends EventEmitter {
       const role = this.gameState.roleAssignments.get(playerId) as Role;
       this.emit('player:eliminated', playerId, role, 'kill');
       
-      await this.gameState.save();
+      await this.saveGameState();
     }
 
     // Check win conditions
@@ -264,7 +265,7 @@ export class GameStateMachine extends EventEmitter {
     // Handle phase-specific logic
     await this.handlePhaseEntry(newPhase);
     
-    await this.gameState.save();
+    await this.saveGameState();
     
     gameLogger.phaseChanged(this.room.code, newPhase, this.gameState.dayNumber);
     
@@ -293,7 +294,7 @@ export class GameStateMachine extends EventEmitter {
         this.nightPhaseIndex = 0;
         
         // Save state before transitioning
-        await this.gameState.save();
+        await this.saveGameState();
         gameLogger.phaseChanged(this.room.code, GamePhase.NIGHT, this.gameState.dayNumber);
         
         // Emit NIGHT phase briefly, then transition to MAFIA_ACTION
@@ -430,7 +431,7 @@ export class GameStateMachine extends EventEmitter {
     if (currentPhase === GamePhase.MAFIA_ACTION) {
       const mafiaTarget = this.calculateMafiaTarget();
       this.gameState.nightActions.mafiaTarget = mafiaTarget;
-      await this.gameState.save();
+      await this.saveGameState();
     }
 
     this.nightPhaseIndex++;
@@ -530,7 +531,7 @@ export class GameStateMachine extends EventEmitter {
         break;
     }
 
-    await this.gameState.save();
+    await this.saveGameState();
     return true;
   }
 
@@ -671,7 +672,7 @@ export class GameStateMachine extends EventEmitter {
       saves
     };
 
-    await this.gameState.save();
+    await this.saveGameState();
 
     this.emit('night:result', this.gameState.lastNightResult);
   }
@@ -687,7 +688,7 @@ export class GameStateMachine extends EventEmitter {
 
     const voteCounts = new Map<string, number>();
     
-    votes.forEach((targetId) => {
+    votes.forEach((targetId: string) => {
       voteCounts.set(targetId, (voteCounts.get(targetId) || 0) + 1);
     });
 
@@ -727,7 +728,7 @@ export class GameStateMachine extends EventEmitter {
 
     // Record vote
     this.gameState.votes.set(voterId, targetId);
-    await this.gameState.save();
+    await this.saveGameState();
 
     // Emit vote update
     const voteCounts = this.calculateVoteCounts();
@@ -744,7 +745,7 @@ export class GameStateMachine extends EventEmitter {
 
     const counts: Record<string, number> = {};
     
-    this.gameState.votes.forEach((targetId, voterId) => {
+    this.gameState.votes.forEach((targetId: string, voterId: string) => {
       // Mayor's vote counts as 2
       const voterRole = this.gameState!.roleAssignments.get(voterId) as Role;
       const voteWeight = voterRole === Role.MAYOR ? 2 : 1;
@@ -810,7 +811,7 @@ export class GameStateMachine extends EventEmitter {
       await this.eliminatePlayer(this.gameState.eliminatedToday, 'vote');
     }
 
-    await this.gameState.save();
+    await this.saveGameState();
   }
 
   /**
@@ -834,9 +835,7 @@ export class GameStateMachine extends EventEmitter {
 
     const role = this.gameState.roleAssignments.get(playerId) as Role;
 
-    await this.gameState.save();
-
-    gameLogger.playerEliminated(this.room.code, playerId, role, reason);
+    await this.saveGameState();
 
     this.emit('player:eliminated', playerId, role, reason);
   }
@@ -856,7 +855,7 @@ export class GameStateMachine extends EventEmitter {
     let mafiaCount = 0;
     let townCount = 0;
 
-    alivePlayers.forEach(playerId => {
+    alivePlayers.forEach((playerId: string) => {
       const team = this.gameState!.teamAssignments.get(playerId) as Team;
       if (team === Team.MAFIA) {
         mafiaCount++;
@@ -870,7 +869,7 @@ export class GameStateMachine extends EventEmitter {
     if (mafiaCount >= townCount) {
       this.gameState.winner = WinCondition.MAFIA_WINS;
       this.gameState.winningTeam = Team.MAFIA;
-      this.gameState.winningPlayers = alivePlayers.filter(id => 
+      this.gameState.winningPlayers = alivePlayers.filter((id: string) => 
         this.gameState!.teamAssignments.get(id) === Team.MAFIA
       );
       return WinCondition.MAFIA_WINS;
@@ -880,7 +879,7 @@ export class GameStateMachine extends EventEmitter {
     if (mafiaCount === 0) {
       this.gameState.winner = WinCondition.TOWN_WINS;
       this.gameState.winningTeam = Team.TOWN;
-      this.gameState.winningPlayers = alivePlayers.filter(id => 
+      this.gameState.winningPlayers = alivePlayers.filter((id: string) => 
         this.gameState!.teamAssignments.get(id) === Team.TOWN
       );
       return WinCondition.TOWN_WINS;
@@ -898,7 +897,7 @@ export class GameStateMachine extends EventEmitter {
     this.clearTimers();
 
     this.gameState.endedAt = new Date();
-    await this.gameState.save();
+    await this.saveGameState();
 
     // Update room (in-memory only)
     this.room.isActive = false;
@@ -980,14 +979,14 @@ export class GameStateMachine extends EventEmitter {
       case Role.GODFATHER:
       case Role.MAFIOSO:
         // Cannot target fellow mafia
-        return alivePlayers.filter(id => 
+        return alivePlayers.filter((id: string) => 
           this.gameState!.teamAssignments.get(id) !== Team.MAFIA
         );
 
       case Role.DETECTIVE:
       case Role.DEPUTY_DETECTIVE:
         // Cannot investigate self - exclude all detective-type players
-        return alivePlayers.filter(id => {
+        return alivePlayers.filter((id: string) => {
           const r = this.gameState!.roleAssignments.get(id) as Role;
           return r !== Role.DETECTIVE && r !== Role.DEPUTY_DETECTIVE;
         });
@@ -1000,7 +999,7 @@ export class GameStateMachine extends EventEmitter {
       case Role.VIGILANTE:
         // Cannot target self
         const vigilanteId = this.getPlayerIdByRole(Role.VIGILANTE);
-        return alivePlayers.filter(id => id !== vigilanteId);
+        return alivePlayers.filter((id: string) => id !== vigilanteId);
 
       default:
         return alivePlayers;
@@ -1030,7 +1029,7 @@ export class GameStateMachine extends EventEmitter {
 
     const roles = new Set<Role>();
     
-    this.gameState.alivePlayers.forEach(playerId => {
+    this.gameState.alivePlayers.forEach((playerId: string) => {
       const role = this.gameState!.roleAssignments.get(playerId) as Role;
       if (role) roles.add(role);
     });
@@ -1058,7 +1057,7 @@ export class GameStateMachine extends EventEmitter {
   }
 
   /**
-   * Log an action
+   * Log an action (in-memory only - no persistence)
    */
   private async logAction(
     playerId: string, 
@@ -1068,21 +1067,7 @@ export class GameStateMachine extends EventEmitter {
   ): Promise<void> {
     if (!this.gameState || !this.room) return;
 
-    const playerRole = this.gameState.roleAssignments.get(playerId) as Role;
-
-    await ActionLog.create({
-      roomId: this.room._id,
-      gameId: this.gameState._id,
-      dayNumber: this.gameState.dayNumber,
-      phase: this.gameState.phase,
-      playerId,
-      playerRole,
-      actionType,
-      targetId,
-      result,
-      timestamp: new Date()
-    });
-
+    // In-memory mode: just log to console, no DB persistence
     gameLogger.actionPerformed(this.room.code, playerId, actionType, targetId);
   }
 
@@ -1112,7 +1097,7 @@ export class GameStateMachine extends EventEmitter {
   /**
    * Get current game state
    */
-  getState(): IGameStateDocument | null {
+  getState(): any | null {
     return this.gameState;
   }
 

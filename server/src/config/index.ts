@@ -12,18 +12,6 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 interface Config {
   env: string;
   port: number;
-  mongodb: {
-    uri: string;
-    options: object;
-  };
-  redis: {
-    url: string;
-    enabled: boolean;
-  };
-  jwt: {
-    secret: string;
-    expiresIn: string;
-  };
   cors: {
     origin: string | string[];
     credentials: boolean;
@@ -40,25 +28,6 @@ interface Config {
 const config: Config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3001', 10),
-  
-  mongodb: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/mafia-game',
-    options: {
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    }
-  },
-  
-  redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
-    enabled: true // Always enabled now for session storage
-  },
-  
-  jwt: {
-    secret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
-    expiresIn: '7d'
-  },
   
   cors: {
     origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
@@ -77,10 +46,6 @@ const config: Config = {
 
 // Validation
 function validateConfig(): void {
-  if (config.env === 'production' && config.jwt.secret === 'dev-secret-change-in-production') {
-    throw new Error('JWT_SECRET must be set in production environment');
-  }
-  
   if (config.game.minPlayers < 3) {
     throw new Error('Minimum players cannot be less than 3');
   }

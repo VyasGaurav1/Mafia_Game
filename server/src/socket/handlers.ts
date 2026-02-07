@@ -376,7 +376,7 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
           // Update mafia vote display for mafia members
           if (actionType === ActionType.MAFIA_KILL) {
             const mafiaVotes: Record<string, string> = {};
-            gameState.nightActions.mafiaVotes.forEach((target, voter) => {
+            gameState.nightActions.mafiaVotes.forEach((target: string, voter: string) => {
               mafiaVotes[voter] = target;
             });
             
@@ -613,7 +613,7 @@ export function setupSocketHandlers(io: Server<ClientToServerEvents, ServerToCli
                 dayNumber: state.dayNumber,
                 currentTimer: state.currentTimer,
                 alivePlayers: state.alivePlayers,
-                deadPlayers: state.deadPlayers.map(id => {
+                deadPlayers: state.deadPlayers.map((id: string) => {
                   const p = room.players.find(pl => pl.oderId === id);
                   return {
                     odId: p?.odId || '',
@@ -802,7 +802,7 @@ function setupGameEventListeners(
     if (!gameState) return;
 
     const hasVoted: string[] = [];
-    gameState.votes.forEach((_, oderId) => hasVoted.push(oderId));
+    gameState.votes.forEach((_: string, oderId: string) => hasVoted.push(oderId));
 
     io.to(roomCode).emit('vote:update', {
       votes,

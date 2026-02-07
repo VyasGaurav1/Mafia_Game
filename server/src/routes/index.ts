@@ -5,39 +5,24 @@
 
 import { Router, Request, Response } from 'express';
 import { roomManager } from '../services/RoomManager';
-import { User } from '../models/User';
-import { Room } from '../models/Room';
-import { GameState } from '../models/GameState';
 import logger from '../utils/logger';
-import { v4 as uuidv4 } from 'uuid';
 import { validateRequest, schemas } from '../middleware/validation';
 import { authLimiter } from '../middleware/rateLimiter';
-import mongoose from 'mongoose';
 
 const router = Router();
 
 /**
  * Health check endpoint
  */
-router.get('/health', async (req: Request, res: Response) => {
-  try {
-    // Check database connection
-    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-    
-    res.json({ 
-      status: 'ok',
-      environment: process.env.NODE_ENV || 'development',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      database: dbStatus,
-      version: '1.0.0'
-    });
-  } catch (error) {
-    res.status(503).json({
-      status: 'error',
-      message: 'Service unavailable'
-    });
-  }
+router.get('/health', (req: Request, res: Response) => {
+  res.json({ 
+    status: 'ok',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    storage: 'in-memory',
+    version: '1.0.0'
+  });
 });
 
 /**
@@ -73,34 +58,21 @@ router.get('/rooms/:code', async (req: Request, res: Response) => {
 });
 
 /**
- * Create guest user
+ * Create guest user (simplified - in-memory only)
  */
-router.post('/users/guest', authLimiter, validateRequest(schemas.guestUser), async (req: Request, res: Response) => {
+router.post('/users/guest', authLimiter, validateRequest(schemas.guestUser), (req: Request, res: Response) => {
   try {
     const { username } = req.body;
 
-    // Check if username is taken
-    const existing = await User.findOne({ username });
-    if (existing) {
-      return res.status(409).json({ error: 'Username already taken' });
-    }
-
-    const user = new User({
+    // Generate simple user response (no persistence)
+    const user = {
+      id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       username,
-      isGuest: true,
-      avatar: `avatar_${Math.floor(Math.random() * 10) + 1}`
-    });
+      avatar: `avatar_${Math.floor(Math.random() * 10) + 1}`,
+      isGuest: true
+    };
 
-    await user.save();
-
-    res.json({
-      user: {
-        id: user._id.toString(),
-        username: user.username,
-        avatar: user.avatar,
-        isGuest: user.isGuest
-      }
-    });
+    res.json({ user });
   } catch (error: any) {
     logger.error('Error creating guest user:', error);
     res.status(500).json({ error: 'Failed to create user' });
@@ -108,62 +80,35 @@ router.post('/users/guest', authLimiter, validateRequest(schemas.guestUser), asy
 });
 
 /**
- * Get user stats
+ * Get user stats (not available in memory-only mode)
  */
-router.get('/users/:id/stats', async (req: Request, res: Response) => {
-  try {
-    const user = await User.findById(req.params.id);
-    
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({ stats: user.stats });
-  } catch (error: any) {
-    logger.error('Error fetching user stats:', error);
-    res.status(500).json({ error: 'Failed to fetch stats' });
-  }
+router.get('/users/:id/stats', (_req: Request, res: Response) => {
+  res.status(501).json({ 
+    error: 'Stats not available in memory-only mode',
+    message: 'User statistics require persistent storage'
+  });
 });
 
 /**
- * Get game history
+ * Get game history (not available in memory-only mode)
  */
-router.get('/games/history', async (req: Request, res: Response) => {
-  try {
-    const { userId, limit = 10 } = req.query;
-    
-    const query: any = { endedAt: { $exists: true } };
-    
-    if (userId) {
-      query['alivePlayers'] = userId;
-    }
-
-    const games = await GameState.find(query)
-      .sort({ endedAt: -1 })
-      .limit(Number(limit))
-      .select('roomCode dayNumber winner winningTeam startedAt endedAt');
-
-    res.json({ games });
-  } catch (error: any) {
-    logger.error('Error fetching game history:', error);
-    res.status(500).json({ error: 'Failed to fetch history' });
-  }
+router.get('/games/history', (_req: Request, res: Response) => {
+  res.status(501).json({ 
+    error: 'History not available in memory-only mode',
+    message: 'Game history requires persistent storage'
+  });
 });
 
 /**
  * Validate room code
  */
-router.post('/rooms/validate', validateRequest(schemas.roomValidation), async (req: Request, res: Response) => {
+router.post('/rooms/validate', validateRequest(schemas.roomValidation), (req: Request, res: Response) => {
   try {
     const { code } = req.body;
-
     const room = roomManager.getRoom(code.toUpperCase());
     
     if (!room) {
-      const dbRoom = await Room.findOne({ code: code.toUpperCase(), isActive: true });
-      if (!dbRoom) {
-        return res.json({ valid: false, error: 'Room not found' });
-      }
+      return res.json({ valid: false, error: 'Room not found' });
     }
 
     res.json({ valid: true });
