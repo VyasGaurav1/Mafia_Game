@@ -17,6 +17,7 @@ interface ActionPromptProps {
   investigationResult?: { targetId: string; result: string } | null;
   isOpen?: boolean;
   timeRemaining?: number;
+  onDismiss?: () => void;
 }
 
 const rolePrompts: Record<Role, { icon: React.ReactNode; title: string; description: string }> = {
@@ -135,7 +136,8 @@ export default function ActionPrompt({
   onConfirmAction,
   investigationResult,
   isOpen = true,
-  timeRemaining
+  timeRemaining,
+  onDismiss
 }: ActionPromptProps) {
   const prompt = rolePrompts[role] || rolePrompts[Role.VILLAGER];
   const roleData = ROLE_DISPLAY[role];
@@ -147,7 +149,7 @@ export default function ActionPrompt({
     const targetPlayer = validTargets.find(p => p.oderId === investigationResult.targetId);
     
     return (
-      <Modal isOpen={isOpen} onClose={() => {}} title="Investigation Result" size="sm">
+      <Modal isOpen={isOpen} onClose={onDismiss || (() => {})} title="Investigation Result" size="sm" showClose={!!onDismiss}>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -182,9 +184,10 @@ export default function ActionPrompt({
   return (
     <Modal 
       isOpen={isOpen} 
-      onClose={() => {}} 
+      onClose={onDismiss || (() => {})} 
       title={prompt.title}
       size="md"
+      showClose={!!onDismiss}
     >
     <motion.div
       initial={{ opacity: 0, y: 10 }}

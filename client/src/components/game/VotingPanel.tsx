@@ -19,6 +19,7 @@ interface VotingPanelProps {
   canVote: boolean;
   isOpen?: boolean;
   timeRemaining?: number;
+  onDismiss?: () => void;
 }
 
 export default function VotingPanel({
@@ -31,7 +32,8 @@ export default function VotingPanel({
   requiredVotes,
   canVote,
   isOpen = true,
-  timeRemaining
+  timeRemaining,
+  onDismiss
 }: VotingPanelProps) {
   const alivePlayers = players.filter(p => p.status === PlayerStatus.ALIVE);
   const totalVotes = Object.values(votes).reduce((sum, v) => sum + v, 0);
@@ -48,7 +50,7 @@ export default function VotingPanel({
   const leaders = sortedPlayers.filter(p => (votes[p.oderId] || 0) === maxVotes && maxVotes > 0);
 
   return (
-    <Modal isOpen={isOpen} onClose={() => {}} title="Town Vote" size="md">
+    <Modal isOpen={isOpen} onClose={onDismiss || (() => {})} title="Town Vote" size="md" showClose={!!onDismiss}>
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}

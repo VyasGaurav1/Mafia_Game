@@ -330,6 +330,7 @@ export default function Game() {
                   onConfirmAction={handleNightAction}
                   isOpen={shouldShowActionPrompt}
                   timeRemaining={timer}
+                  onDismiss={() => setSelectedTarget(null)}
                   investigationResult={investigationResult ? {
                     targetId: investigationResult.targetId,
                     result: investigationResult.isGuilty ? 'Mafia' : 'Innocent'
@@ -429,13 +430,14 @@ export default function Game() {
                   canVote={playerAlive && !myVote}
                   isOpen={currentPhase === GamePhase.VOTING}
                   timeRemaining={timer}
+                  onDismiss={() => {}}
                 />
               )}
             </AnimatePresence>
           </div>
 
-          {/* Chat panel - Right - Fixed height with internal scroll */}
-          <div className="lg:col-span-1 h-full flex flex-col">
+          {/* Chat panel - Right - Fixed size container (scrollable internally) */}
+          <div className="lg:col-span-1 h-[500px] lg:h-[600px] flex flex-col flex-shrink-0">
             <ChatPanel
               messages={chatMessages}
               mafiaMessages={mafiaMessages}

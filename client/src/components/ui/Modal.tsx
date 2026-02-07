@@ -58,7 +58,7 @@ export default function Modal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={showClose ? onClose : undefined}
           />
 
           {/* Modal content */}

@@ -804,8 +804,8 @@ export class GameStateMachine extends EventEmitter {
       return false;
     }
 
-    // Validate target is alive
-    if (!this.gameState.alivePlayers.includes(targetId)) {
+    // Validate target is alive or SKIP
+    if (targetId !== 'SKIP' && !this.gameState.alivePlayers.includes(targetId)) {
       return false;
     }
 
@@ -859,10 +859,11 @@ export class GameStateMachine extends EventEmitter {
     if (!this.gameState || !this.room) return;
 
     const voteCounts = this.calculateVoteCounts();
-    const entries = Object.entries(voteCounts);
+    // Filter out SKIP votes - they mean "no elimination"
+    const entries = Object.entries(voteCounts).filter(([targetId]) => targetId !== 'SKIP');
 
     if (entries.length === 0) {
-      // No votes cast
+      // No votes cast or everyone skipped
       this.gameState.eliminatedToday = undefined;
       return;
     }
