@@ -29,13 +29,15 @@ const Matchmaking: React.FC = () => {
 
   // Queue timer
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (inQueue) {
       interval = setInterval(() => {
         setQueueTime(t => t + 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [inQueue]);
 
   // Set up matchmaking listeners
