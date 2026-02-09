@@ -66,6 +66,8 @@ export default function Game() {
 
   const [showRoleReveal, setShowRoleReveal] = useState(false);
   const [showNightResult, setShowNightResult] = useState(false);
+  const [actionPromptDismissed, setActionPromptDismissed] = useState(false);
+  const [votingPanelDismissed, setVotingPanelDismissed] = useState(false);
 
   const playerAlive = isAlive();
   const isMafia = myTeam === Team.MAFIA;
@@ -89,6 +91,12 @@ export default function Game() {
       return () => clearTimeout(timeout);
     }
   }, [currentPhase, nightResult]);
+
+  // Reset dismissal states when phase changes
+  useEffect(() => {
+    setActionPromptDismissed(false);
+    setVotingPanelDismissed(false);
+  }, [currentPhase]);
 
   // Handle night action submission
   const handleNightAction = () => {
@@ -321,16 +329,19 @@ export default function Game() {
           <div className="lg:col-span-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-dark-600 scrollbar-track-transparent pr-2">
             {/* Action prompt for special roles */}
             <AnimatePresence>
-              {shouldShowActionPrompt && myRole && (
+              {shouldShowActionPrompt && !actionPromptDismissed && myRole && (
                 <ActionPrompt
                   role={myRole}
                   validTargets={validTargetPlayers}
                   selectedTarget={selectedTarget}
                   onSelectTarget={setSelectedTarget}
                   onConfirmAction={handleNightAction}
-                  isOpen={shouldShowActionPrompt}
+                  isOpen={shouldShowActionPrompt && !actionPromptDismissed}
                   timeRemaining={timer}
-                  onDismiss={() => setSelectedTarget(null)}
+                  onDismiss={() => {
+                    setSelectedTarget(null);
+                    setActionPromptDismissed(true);
+                  }}
                   investigationResult={investigationResult ? {
                     targetId: investigationResult.targetId,
                     result: investigationResult.isGuilty ? 'Mafia' : 'Innocent'
@@ -418,7 +429,7 @@ export default function Game() {
 
             {/* Voting panel during voting phase */}
             <AnimatePresence>
-              {currentPhase === GamePhase.VOTING && (
+              {currentPhase === GamePhase.VOTING && !votingPanelDismissed && (
                 <VotingPanel
                   players={alivePlayers}
                   votes={votes}
@@ -428,9 +439,9 @@ export default function Game() {
                   onSkipVote={handleSkipVote}
                   requiredVotes={requiredVotes}
                   canVote={playerAlive && !myVote}
-                  isOpen={currentPhase === GamePhase.VOTING}
+                  isOpen={currentPhase === GamePhase.VOTING && !votingPanelDismissed}
                   timeRemaining={timer}
-                  onDismiss={() => {}}
+                  onDismiss={() => setVotingPanelDismissed(true)}
                 />
               )}
             </AnimatePresence>

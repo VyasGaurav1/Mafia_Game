@@ -176,6 +176,19 @@ export default function ActionPrompt({
         >
           {investigationResult.result}
         </motion.div>
+        
+        {/* Dismiss button */}
+        {onDismiss && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            onClick={onDismiss}
+            className="mt-6 px-6 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg transition-colors"
+          >
+            Got it
+          </motion.button>
+        )}
       </motion.div>
       </Modal>
     );
@@ -270,15 +283,16 @@ export default function ActionPrompt({
         <span>Confirm {role === Role.DOCTOR ? 'Protection' : role === Role.DETECTIVE || role === Role.DON_MAFIA ? 'Investigation' : 'Target'}</span>
       </motion.button>
 
-      {/* Skip option for some roles */}
-      {[Role.VIGILANTE, Role.DOCTOR].includes(role) && (
-        <button
-          onClick={() => onConfirmAction()}
-          className="w-full mt-2 py-2 text-gray-500 hover:text-gray-300 text-sm transition-colors"
-        >
-          Skip this action
-        </button>
-      )}
+      {/* Skip option available for all roles */}
+      <button
+        onClick={() => {
+          onSelectTarget(null);
+          onDismiss?.();
+        }}
+        className="w-full mt-2 py-2 text-gray-500 hover:text-gray-300 text-sm transition-colors"
+      >
+        Skip this action
+      </button>
     </motion.div>
     </Modal>
   );
