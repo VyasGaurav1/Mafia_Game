@@ -8,11 +8,13 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaPlay, FaUsers, FaBook, FaCog, FaSync, FaLock, 
-  FaGlobe, FaKey, FaUserFriends, FaCrown, FaGamepad 
+  FaGlobe, FaKey, FaUserFriends, FaCrown, FaGamepad,
+  FaSignInAlt, FaBolt
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
 import { useGameStore } from '@/store/gameStore';
+import { useAuthStore } from '@/store/authStore';
 import { socketService } from '@/services/socketService';
 import { IRoom, RoomVisibility, ROLE_DISPLAY, Role } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -25,6 +27,7 @@ import Modal from '@/components/ui/Modal';
 export default function Landing() {
   const navigate = useNavigate();
   const { user, setUser, setConnectionStatus } = useGameStore();
+  const { isAuthenticated, isGuest, user: authUser, logout } = useAuthStore();
   
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
@@ -208,32 +211,37 @@ export default function Landing() {
             <span className="font-display text-xl font-bold text-white">MAFIA</span>
           </motion.div>
           
-          {user ? (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3"
-            >
-              <span className="text-gray-400 text-sm">Playing as</span>
-              <span className="font-semibold text-white">{user.username}</span>
-              <button 
-                onClick={() => { setPendingAction(null); setShowUsernameModal(true); }}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <FaCog />
-              </button>
-            </motion.div>
-          ) : (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3"
+          >
+            {isAuthenticated ? (
+              <>
+                <span className="text-gray-400 text-sm hidden sm:inline">
+                  {isGuest ? 'Guest:' : 'Playing as'}
+                </span>
+                <span className="font-semibold text-white">{authUser?.username}</span>
+                {isGuest && <span className="text-xs text-yellow-500">(Guest)</span>}
+                <button 
+                  onClick={logout}
+                  className="text-gray-400 hover:text-red-400 transition-colors ml-2"
+                  title="Logout"
+                >
+                  <FaCog />
+                </button>
+              </>
+            ) : (
               <Button
-                variant="ghost"
+                variant="primary"
                 size="sm"
-                onClick={() => { setPendingAction(null); setShowUsernameModal(true); }}
+                onClick={() => navigate('/login')}
+                icon={<FaSignInAlt />}
               >
-                Set Name
+                Login
               </Button>
-            </motion.div>
-          )}
+            )}
+          </motion.div>
         </header>
 
         {/* Hero — compact */}
@@ -260,7 +268,14 @@ export default function Landing() {
           transition={{ delay: 0.2 }}
           className="flex flex-wrap justify-center gap-3 mb-6"
         >
-          <Button variant="primary" onClick={handlePlayClick} icon={<FaPlay />}>
+          <Button 
+            variant="primary" 
+            onClick={() => navigate('/matchmaking')} 
+            icon={<FaBolt />}
+          >
+            Find Game
+          </Button>
+          <Button variant="secondary" onClick={handlePlayClick} icon={<FaPlay />}>
             Create Game
           </Button>
           <Button variant="ghost" onClick={() => setShowRulesModal(true)} icon={<FaBook />}>

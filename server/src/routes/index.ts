@@ -8,8 +8,12 @@ import { roomManager } from '../services/RoomManager';
 import logger from '../utils/logger';
 import { validateRequest, schemas } from '../middleware/validation';
 import { authLimiter } from '../middleware/rateLimiter';
+import authRoutes from './auth';
 
 const router = Router();
+
+// Mount auth routes
+router.use('/auth', authRoutes);
 
 /**
  * Health check endpoint

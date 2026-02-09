@@ -22,6 +22,13 @@ class SocketService {
   private maxReconnectAttempts = 5;
 
   /**
+   * Get the raw socket instance (for advanced use)
+   */
+  getSocket(): Socket | null {
+    return this.socket;
+  }
+
+  /**
    * Initialize socket connection
    */
   connect(oderId: string, username: string): Promise<void> {
